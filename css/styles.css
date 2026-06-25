@@ -15,8 +15,11 @@
   --ink: #213223;
   --muted: #657567;
   --line: #dce9cf;
-  --shadow: 0 16px 36px rgba(38, 91, 42, 0.13);
-  --soft-shadow: 0 8px 22px rgba(38, 91, 42, 0.1);
+  --sun: #ffe7a6;
+  --sage: #e4efd9;
+  --clay: #bd8064;
+  --shadow: 0 22px 48px rgba(38, 91, 42, 0.16);
+  --soft-shadow: 0 12px 28px rgba(38, 91, 42, 0.11);
   --radius: 8px;
   --radius-large: 18px;
   --content: 1120px;
@@ -42,8 +45,9 @@ body {
     sans-serif;
   line-height: 1.75;
   background:
-    linear-gradient(180deg, rgba(255, 253, 247, 0.96), rgba(246, 252, 239, 0.96)),
-    repeating-linear-gradient(90deg, rgba(46, 125, 50, 0.03) 0 1px, transparent 1px 56px);
+    linear-gradient(180deg, rgba(255, 253, 247, 0.98), rgba(246, 252, 239, 0.96) 48%, rgba(255, 247, 232, 0.78)),
+    repeating-linear-gradient(90deg, rgba(46, 125, 50, 0.032) 0 1px, transparent 1px 64px),
+    repeating-linear-gradient(0deg, rgba(245, 154, 35, 0.024) 0 1px, transparent 1px 58px);
 }
 
 body::after {
@@ -145,99 +149,54 @@ textarea {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  min-height: min(710px, calc(100vh - 72px));
+  min-height: min(740px, calc(100vh - 72px));
   display: grid;
   align-items: end;
   width: min(100% - 28px, var(--content));
   margin: 0 auto 42px;
   border-radius: 0 0 30px 30px;
   box-shadow: var(--shadow);
-  background: var(--sky);
+  background: #dfeecf;
+}
+
+.hero::before,
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.hero::before {
+  background:
+    linear-gradient(90deg, rgba(255, 253, 247, 0.98) 0 35%, rgba(255, 253, 247, 0.74) 50%, rgba(255, 253, 247, 0.18) 74%),
+    linear-gradient(0deg, rgba(23, 63, 27, 0.28), transparent 42%);
+}
+
+.hero::after {
+  opacity: 0.32;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 64px),
+    linear-gradient(180deg, transparent 0 76%, rgba(255, 253, 247, 0.36) 100%);
 }
 
 .hero-visual {
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: 0;
   overflow: hidden;
-  background:
-    linear-gradient(180deg, rgba(145, 213, 255, 0.85) 0%, rgba(243, 251, 255, 0.4) 45%, transparent 62%),
-    linear-gradient(90deg, rgba(255, 253, 247, 0.96) 0 28%, rgba(255, 253, 247, 0.58) 48%, rgba(255, 255, 255, 0.12) 74%);
+  background: #dfeecf;
 }
 
-.sunlight {
-  position: absolute;
-  top: 7%;
-  right: 13%;
-  width: 24%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.9), rgba(255, 250, 205, 0.45) 44%, transparent 68%);
-}
-
-.mountain {
-  position: absolute;
-  right: -6%;
-  bottom: 28%;
-  width: 78%;
-  height: 40%;
-  clip-path: polygon(0 100%, 14% 54%, 24% 72%, 39% 30%, 55% 64%, 70% 26%, 100% 100%);
-}
-
-.mountain-back {
-  bottom: 34%;
-  background: linear-gradient(135deg, #a8d689, #4e9b5d 52%, #2b6d38);
-  opacity: 0.75;
-}
-
-.mountain-front {
-  right: -12%;
-  bottom: 25%;
-  background: linear-gradient(135deg, #8bc46c, #377f37 55%, #215827);
-  opacity: 0.86;
-}
-
-.field-lines {
-  position: absolute;
-  right: -5%;
-  bottom: 0;
-  width: 88%;
-  height: 37%;
-  background:
-    repeating-linear-gradient(168deg, rgba(255, 255, 255, 0.35) 0 10px, transparent 10px 28px),
-    repeating-linear-gradient(8deg, rgba(46, 125, 50, 0.18) 0 8px, transparent 8px 28px),
-    linear-gradient(180deg, #b9dd5f, #6fb144 58%, #4c8d35);
-  clip-path: polygon(0 18%, 100% 0, 100% 100%, 0 100%);
-}
-
-.farm-houses {
-  position: absolute;
-  right: 16%;
-  bottom: 26%;
-  display: flex;
-  gap: 18px;
-  align-items: end;
-}
-
-.farm-houses span {
-  width: 58px;
-  height: 34px;
-  border-radius: 4px 4px 2px 2px;
-  background: linear-gradient(180deg, #f9f0d8, #e7d8ad);
-  border-top: 12px solid #6b7d40;
-  box-shadow: 0 10px 18px rgba(33, 88, 39, 0.16);
-}
-
-.farm-houses span:nth-child(2) {
-  width: 46px;
-  height: 28px;
-  opacity: 0.82;
-}
-
-.farm-houses span:nth-child(3) {
-  width: 36px;
-  height: 24px;
-  opacity: 0.7;
+.hero-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(1.04) contrast(1.03);
+  transform: scale(1.01);
 }
 
 .hero-content {
@@ -960,6 +919,313 @@ textarea {
   fill: currentColor;
 }
 
+
+/* Visual refinement pass: original satoyama asset and softer reading rhythm. */
+.site-header {
+  border-bottom: 1px solid rgba(46, 125, 50, 0.12);
+}
+
+.brand-mark {
+  background:
+    linear-gradient(145deg, #f7fbef, #ffffff 58%, #fff3d6);
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+}
+
+.hero h1 {
+  text-shadow: 0 8px 26px rgba(255, 253, 247, 0.62);
+}
+
+.hero-copy {
+  color: #233f25;
+  text-shadow: 0 6px 18px rgba(255, 253, 247, 0.72);
+}
+
+.section-heading {
+  max-width: 920px;
+}
+
+.section-number {
+  box-shadow: 0 8px 18px rgba(46, 125, 50, 0.18);
+}
+
+.route-card,
+.friend-card,
+.event-card,
+.method-card,
+.note-card,
+.seed-card,
+.note-form,
+.profile-panel,
+.map-panel {
+  border-color: rgba(46, 125, 50, 0.14);
+}
+
+.route-card,
+.friend-card,
+.event-card,
+.note-card,
+.seed-card {
+  background:
+    linear-gradient(180deg, rgba(255, 253, 247, 0.98), rgba(255, 250, 239, 0.9));
+  box-shadow: 0 12px 30px rgba(38, 91, 42, 0.1);
+}
+
+.route-card {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 247, 0.98), rgba(246, 252, 239, 0.92));
+}
+
+.route-card::after {
+  content: "";
+  position: absolute;
+  right: -20px;
+  bottom: -18px;
+  width: 118px;
+  height: 72px;
+  opacity: 0.28;
+  background:
+    repeating-linear-gradient(168deg, rgba(46, 125, 50, 0.28) 0 7px, transparent 7px 16px),
+    linear-gradient(180deg, #e8f3c7, #9fcd71);
+  clip-path: polygon(0 28%, 100% 0, 100% 100%, 0 100%);
+}
+
+.route-icon {
+  color: var(--green-800);
+  background:
+    linear-gradient(145deg, #eef7e5, #fffaf0);
+}
+
+.trust-list div {
+  background:
+    linear-gradient(180deg, rgba(237, 246, 231, 0.88), rgba(255, 253, 247, 0.88));
+}
+
+.friend-card,
+.event-card,
+.note-card,
+.seed-card,
+.method-card {
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.friend-card:hover,
+.event-card:hover,
+.note-card:hover,
+.seed-card:hover,
+.method-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(46, 125, 50, 0.24);
+  box-shadow: 0 16px 34px rgba(38, 91, 42, 0.14);
+}
+
+.friend-photo,
+.event-photo,
+.note-photo,
+.seed-photo {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  background-size: cover;
+  box-shadow:
+    inset 0 0 0 1px rgba(46, 125, 50, 0.08),
+    0 8px 18px rgba(38, 91, 42, 0.08);
+}
+
+.friend-photo::after,
+.event-photo::after,
+.note-photo::after,
+.seed-photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 48%, rgba(23, 63, 27, 0.08));
+}
+
+.photo-field {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(46, 125, 50, 0.1)),
+    url("../assets/visuals/hero-satoyama.jpg");
+  background-position: 64% 58%;
+  background-size: 260%;
+}
+
+.photo-community {
+  background-image:
+    linear-gradient(135deg, rgba(255, 247, 232, 0.12), rgba(46, 125, 50, 0.2)),
+    url("../assets/visuals/hero-satoyama.jpg");
+  background-position: 74% 68%;
+  background-size: 300%;
+}
+
+.photo-map {
+  background-image:
+    linear-gradient(135deg, rgba(223, 243, 255, 0.18), rgba(245, 154, 35, 0.12)),
+    url("../assets/visuals/hero-satoyama.jpg");
+  background-position: 28% 62%;
+  background-size: 280%;
+}
+
+.photo-veggie {
+  background:
+    radial-gradient(circle at 34% 28%, #f6a623 0 10px, transparent 11px),
+    radial-gradient(circle at 62% 38%, #d85a32 0 13px, transparent 14px),
+    radial-gradient(circle at 42% 68%, #5ca63f 0 16px, transparent 17px),
+    linear-gradient(135deg, #fff6d8, #cfe48c 62%, #73ad52);
+}
+
+.photo-sprout {
+  background:
+    radial-gradient(ellipse at 50% 27%, #a7d86c 0 14px, transparent 15px),
+    linear-gradient(90deg, transparent 46%, #438c38 46% 54%, transparent 54%),
+    linear-gradient(180deg, #edf6d9 0 50%, #9a7665 50% 100%);
+}
+
+.warm-band {
+  background:
+    linear-gradient(180deg, rgba(255, 247, 232, 0.74), rgba(255, 253, 247, 0.36)),
+    repeating-linear-gradient(0deg, rgba(189, 128, 100, 0.05) 0 1px, transparent 1px 48px);
+}
+
+.event-date {
+  background:
+    linear-gradient(180deg, #f1f8dd, #fff1ca);
+}
+
+.method-board {
+  scrollbar-color: rgba(46, 125, 50, 0.38) transparent;
+}
+
+.method-card {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 247, 0.98), rgba(246, 252, 239, 0.88));
+}
+
+.method-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  background: var(--green-700);
+}
+
+.method-leaf::before {
+  background: var(--leaf);
+}
+
+.method-orange::before {
+  background: var(--orange);
+}
+
+.method-soil::before {
+  background: var(--soil);
+}
+
+.method-sky::before {
+  background: #73a7c8;
+}
+
+.method-note,
+.notice,
+.form-help {
+  border-color: rgba(245, 154, 35, 0.74);
+  background: linear-gradient(180deg, rgba(255, 247, 232, 0.92), rgba(255, 253, 247, 0.84));
+}
+
+.note-form {
+  position: relative;
+  background:
+    linear-gradient(180deg, #ffffff, #fffaf0 58%, #f6fbe8);
+}
+
+.note-form::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 6px;
+  background: linear-gradient(90deg, var(--green-700), var(--leaf), var(--orange));
+}
+
+.note-form input,
+.note-form textarea {
+  border-color: rgba(46, 125, 50, 0.16);
+  background: rgba(255, 253, 247, 0.92);
+}
+
+.seed-map {
+  align-items: stretch;
+}
+
+.map-panel {
+  background:
+    linear-gradient(32deg, rgba(255, 255, 255, 0.32) 0 8px, transparent 8px 30px),
+    linear-gradient(152deg, #dff3ff 0 30%, #e9f3c5 30% 54%, #8ecb6f 54% 78%, #f6dfa1 78% 100%);
+}
+
+.map-panel::before,
+.map-panel::after {
+  background: rgba(46, 125, 50, 0.14);
+}
+
+.map-pin {
+  border-color: rgba(255, 253, 247, 0.94);
+}
+
+.profile-panel {
+  background:
+    linear-gradient(135deg, #ffffff, #fff7e8 48%, #eef7e5);
+}
+
+.avatar-placeholder {
+  background:
+    radial-gradient(circle at 50% 28%, #fff7e8 0 17px, transparent 18px),
+    linear-gradient(180deg, #b8db73 0 48%, var(--green-700) 48% 100%);
+}
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.hero-content,
+.section-heading > div,
+.route-card > span,
+.friend-top > div,
+.event-top > div,
+.seed-top > div,
+.profile-main > div {
+  min-width: 0;
+}
+
+.hero-copy,
+.notice,
+.section h2,
+.section-heading p,
+.route-card p,
+.friend-card p,
+.event-card p,
+.method-card p,
+.note-card p,
+.seed-card p,
+.form-help {
+  overflow-wrap: anywhere;
+}
 @media (max-width: 900px) {
   .desktop-nav {
     display: none;
@@ -969,21 +1235,6 @@ textarea {
     min-height: 660px;
   }
 
-  .hero-visual {
-    background:
-      linear-gradient(180deg, rgba(145, 213, 255, 0.84) 0%, rgba(243, 251, 255, 0.36) 42%, transparent 64%),
-      linear-gradient(180deg, rgba(255, 253, 247, 0.92) 0 36%, rgba(255, 253, 247, 0.32) 65%, transparent 100%);
-  }
-
-  .mountain {
-    width: 100%;
-    right: -22%;
-  }
-
-  .field-lines {
-    width: 112%;
-    right: -28%;
-  }
 
   .route-grid,
   .card-grid {
@@ -1012,7 +1263,7 @@ textarea {
 
   .hero {
     width: min(100% - 20px, var(--content));
-    min-height: 620px;
+    min-height: 640px;
     margin-bottom: 20px;
     border-radius: 0 0 22px 22px;
   }
@@ -1126,5 +1377,58 @@ textarea {
   .bottom-nav svg {
     width: 19px;
     height: 19px;
+  }
+}
+@media (max-width: 620px) {
+  .hero-content {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .hero-copy,
+  .notice {
+    max-width: calc(100vw - 56px);
+  }
+
+  .section-heading > div {
+    width: 100%;
+  }
+
+  .section h2,
+  .section-heading p,
+  .route-card p,
+  .friend-card p,
+  .event-card p,
+  .note-card p,
+  .seed-card p {
+    max-width: 100%;
+  }
+
+  .bottom-nav {
+    right: 8px;
+    left: 8px;
+    width: auto;
+    max-width: none;
+    transform: none;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .bottom-nav a {
+    min-width: 0;
+  }
+
+  .bottom-nav span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 360px) {
+  .bottom-nav {
+    right: 4px;
+    left: 4px;
+    width: auto;
   }
 }
