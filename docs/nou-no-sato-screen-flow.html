@@ -14,7 +14,7 @@
         --cream: #fff7e8;
         --orange: #f59a23;
         --soil: #8d6e63;
-        --future: #f4f1eb;
+        --excluded: #f4f1eb;
         --line: #dce9cf;
         --ink: #213223;
         --muted: #657567;
@@ -105,7 +105,7 @@
       }
       .core { color: var(--green-800); background: var(--green-100); border: 1px solid rgba(46, 125, 50, 0.24); }
       .inline { color: #405c25; background: #fbfff3; border: 1px dashed #8ab465; }
-      .future { color: #5d5142; background: var(--future); border: 1px dashed #a99b88; }
+      .excluded { color: #5d5142; background: var(--excluded); border: 1px dashed #a99b88; }
       .privacy { color: #6a4314; background: var(--cream); border: 1px solid rgba(245, 154, 35, 0.36); }
 
       section { margin-top: 42px; }
@@ -140,7 +140,7 @@
         font-weight: 700;
       }
       .priority-card.inline { background: linear-gradient(180deg, #fff, #fbfff3); }
-      .priority-card.future { background: var(--future); box-shadow: none; }
+      .priority-card.excluded { background: var(--excluded); box-shadow: none; }
 
       .flow {
         display: grid;
@@ -173,10 +173,10 @@
         background: #fbfff3;
         box-shadow: none;
       }
-      .node.future {
+      .node.excluded {
         border-style: dashed;
         border-color: #a99b88;
-        background: var(--future);
+        background: var(--excluded);
         box-shadow: none;
       }
       .node.privacy {
@@ -212,15 +212,15 @@
         background: repeating-linear-gradient(180deg, #8ab465 0 5px, transparent 5px 10px);
       }
 
-      .future-band, .screen-grid {
+      .excluded-band, .screen-grid {
         display: grid;
         gap: 12px;
       }
-      .future-band { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+      .excluded-band { grid-template-columns: repeat(6, minmax(0, 1fr)); }
       .screen-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .screen-card { padding: 15px; }
       .screen-card.inline { border-style: dashed; background: #fbfff3; box-shadow: none; }
-      .screen-card.future { border-style: dashed; background: var(--future); box-shadow: none; }
+      .screen-card.excluded { border-style: dashed; background: var(--excluded); box-shadow: none; }
       .screen-card .tag { margin-top: 12px; }
 
       .note {
@@ -235,7 +235,7 @@
 
       @media (max-width: 980px) {
         .priority-grid { grid-template-columns: 1fr; }
-        .branches, .future-band { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .branches, .excluded-band { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .screen-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       }
 
@@ -245,7 +245,7 @@
         h1 { font-size: clamp(1.15rem, 5.7vw, 1.55rem); line-height: 1.18; }
         .lead { font-size: 0.9rem; line-height: 1.75; word-break: break-all; }
         .legend { display: grid; grid-template-columns: 1fr; justify-items: start; }
-        .branches, .future-band, .screen-grid { grid-template-columns: 1fr; }
+        .branches, .excluded-band, .screen-grid { grid-template-columns: 1fr; }
         .node { min-height: 0; }
       }
     </style>
@@ -255,11 +255,11 @@
       <header class="hero">
         <p class="eyebrow">Nou no Sato / Screen Flow Priority</p>
         <h1>農の里 Phase 1 画面遷移図</h1>
-        <p class="lead">中心価値である「地元の仲間・イベント・農法学習・非公開の畑ノート・在来種マップ」を、最初に作る画面、同一画面内で代替する画面、Future扱いの導線に分けて整理した設計確認用HTMLです。</p>
+        <p class="lead">中心価値である「地元の仲間・イベント・農法学習・非公開の畑ノート・在来種マップ」を、最初に作る画面、同一画面内で代替する画面、除外する導線に分けて整理した設計確認用HTMLです。</p>
         <div class="legend" aria-label="凡例">
           <span class="core">Phase 1 Core</span>
           <span class="inline">Inline / Card Expand</span>
-          <span class="future">Future / Later</span>
+          <span class="excluded">除外 / Not planned</span>
           <span class="privacy">非公開・位置情報なし</span>
         </div>
       </header>
@@ -287,8 +287,8 @@
               <li>S14 設定・公開範囲説明</li>
             </ul>
           </article>
-          <article class="priority-card future">
-            <strong>C. Future / Later</strong>
+          <article class="priority-card excluded">
+            <strong>C. 除外 / Not planned</strong>
             <ul>
               <li>困りごとから探す</li>
               <li>条件付き相談</li>
@@ -348,15 +348,15 @@
         </div>
       </section>
 
-      <section aria-labelledby="future-flow">
-        <h2 id="future-flow">Phase 1では作らない導線</h2>
-        <div class="future-band">
-          <article class="node future"><small>Future</small><h3>困りごとから探す</h3><p>診断アプリに寄りすぎるため保留。</p></article>
-          <article class="node future"><small>Future</small><h3>条件付き相談</h3><p>相談導線は安全設計とセットで再検討。</p></article>
-          <article class="node future"><small>Future</small><h3>Q&A</h3><p>公開掲示板はPhase 1では作らない。</p></article>
-          <article class="node future"><small>Future</small><h3>通報・ブロック</h3><p>Q&AやDMを作る場合に再検討。</p></article>
-          <article class="node future"><small>Future</small><h3>季節チャレンジ</h3><p>継続促進は利用確認後。</p></article>
-          <article class="node future"><small>Future</small><h3>仮想畑</h3><p>遊び要素はPhase 1後に判断。</p></article>
+      <section aria-labelledby="excluded-flow">
+        <h2 id="excluded-flow">実装しない導線</h2>
+        <div class="excluded-band">
+          <article class="node excluded"><small>Not planned</small><h3>困りごとから探す</h3><p>中心価値から外れるため作らない。</p></article>
+          <article class="node excluded"><small>Not planned</small><h3>条件付き相談</h3><p>対立と運用負荷につながるため作らない。</p></article>
+          <article class="node excluded"><small>Not planned</small><h3>Q&A</h3><p>公開掲示板は作らない。</p></article>
+          <article class="node excluded"><small>Not planned</small><h3>通報・ブロック</h3><p>Q&AやDMを作らないため除外。</p></article>
+          <article class="node excluded"><small>Not planned</small><h3>季節チャレンジ</h3><p>アプリの焦点をぼかすため作らない。</p></article>
+          <article class="node excluded"><small>Not planned</small><h3>仮想畑</h3><p>遊び要素は中心価値から外れるため作らない。</p></article>
         </div>
       </section>
 
@@ -373,13 +373,13 @@
           <article class="screen-card"><h3>S11-S12 在来種</h3><p>運営整備データで地域文脈を知る。</p><span class="tag core">Phase 1 Core</span></article>
           <article class="screen-card"><h3>S13 マイページ</h3><p>振り返りと主要導線への入口。</p><span class="tag core">Phase 1 Core</span></article>
           <article class="screen-card inline"><h3>S14 設定・公開範囲説明</h3><p>初期はマイページ内説明カードで代替。</p><span class="tag inline">Inline / Card Expand</span></article>
-          <article class="screen-card future"><h3>Future導線</h3><p>困りごと、条件付き相談、Q&A、通報、季節チャレンジ、仮想畑。</p><span class="tag future">Future / Later</span></article>
+          <article class="screen-card excluded"><h3>除外する導線</h3><p>困りごと、条件付き相談、Q&A、通報・ブロック、季節チャレンジ、仮想畑は作らない。</p><span class="tag excluded">除外 / Not planned</span></article>
         </div>
       </section>
 
       <section aria-labelledby="note">
         <h2 id="note">設計メモ</h2>
-        <p class="note">最初の実装はA分類を中心に進めます。B分類は画面数を増やさないための代替表現、C分類はPhase 1では実装しない保留項目です。</p>
+        <p class="note">最初の実装はA分類を中心に進めます。B分類は画面数を増やさないための代替表現、C分類は実装しない除外項目です。</p>
       </section>
     </main>
   </body>

@@ -1,6 +1,6 @@
 flowchart TD
   %% Nou no Sato Phase 1 screen transition priority
-  %% Thick solid lines: Phase 1 Core. Dotted lines: Inline substitute or Future / Later.
+  %% Thick solid lines: Phase 1 Core. Dotted lines: Inline substitute or excluded / not planned.
 
   Home["S01 ホーム / ランディング<br/>Phase 1 Core"]
 
@@ -23,13 +23,13 @@ flowchart TD
     SettingsInline["S14相当<br/>公開範囲説明はマイページ内カード"]
   end
 
-  subgraph Future["C. Future / Later"]
-    Trouble["困りごとから探す"]
-    Conditional["条件付き相談"]
-    QA["Q&A"]
-    Safety["通報・ブロック"]
-    Seasonal["季節チャレンジ"]
-    VirtualFarm["仮想畑"]
+  subgraph Excluded["C. 除外 / Not planned"]
+    Trouble["困りごとから探す<br/>作らない"]
+    Conditional["条件付き相談<br/>作らない"]
+    QA["Q&A<br/>作らない"]
+    Safety["通報・ブロック<br/>作らない"]
+    Seasonal["季節チャレンジ<br/>作らない"]
+    VirtualFarm["仮想畑<br/>作らない"]
   end
 
   Home ==> Members
@@ -61,21 +61,21 @@ flowchart TD
   MyPage ==> Events
   MyPage -. "説明カードで代替" .-> SettingsInline
 
-  Home -. "Phase 1では作らない" .-> Trouble
-  Trouble -. "Future" .-> Conditional
-  Conditional -. "Future" .-> QA
-  QA -. "安全機能とセット" .-> Safety
-  Notes -. "Future" .-> Seasonal
-  Notes -. "Future" .-> VirtualFarm
+  Home -. "除外: 作らない" .-> Trouble
+  Home -. "除外: 作らない" .-> Conditional
+  Home -. "除外: 作らない" .-> QA
+  QA -. "除外: 作らない" .-> Safety
+  Notes -. "除外: 作らない" .-> Seasonal
+  Notes -. "除外: 作らない" .-> VirtualFarm
 
   classDef home fill:#e4f3d8,stroke:#1f6b2b,stroke-width:4px,color:#173f1b;
   classDef core fill:#eef8e7,stroke:#2e7d32,stroke-width:3px,color:#173f1b;
   classDef privacy fill:#fff7e8,stroke:#f59a23,stroke-width:3px,color:#5f3e16;
   classDef inline fill:#f8fbf3,stroke:#6f9e4e,stroke-width:2px,stroke-dasharray:6 4,color:#344d24;
-  classDef future fill:#f4f1eb,stroke:#9b8a74,stroke-width:2px,stroke-dasharray:5 5,color:#5d5142;
+  classDef excluded fill:#f4f1eb,stroke:#9b8a74,stroke-width:2px,stroke-dasharray:5 5,color:#5d5142;
 
   class Home home;
   class Members,Events,EventDetail,Learn,MethodDetail,NativeMap,NativeDetail,MyPage core;
   class Notes,NoteCreate privacy;
   class MemberInline,NoteInline,SettingsInline inline;
-  class Trouble,Conditional,QA,Safety,Seasonal,VirtualFarm future;
+  class Trouble,Conditional,QA,Safety,Seasonal,VirtualFarm excluded;
