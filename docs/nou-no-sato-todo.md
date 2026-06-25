@@ -1,4 +1,4 @@
-﻿# 農の里 TODO / 未確認事項
+# 農の里 TODO / 未確認事項
 
 ## 次に確認すること
 
@@ -67,3 +67,5 @@
 5. GitHub Pages等の静的デモ公開可否を調べ、必要なら設定する。
 6. READMEとdocsを現状に合わせて更新する。
 7. Phase 2で必要なバックエンド候補を文書化する。
+
+- `docs/nou-no-sato-screen-flow.html` をブラウザで開き、Phase 1画面候補とFuture扱いの導線が意図どおりか確認する。

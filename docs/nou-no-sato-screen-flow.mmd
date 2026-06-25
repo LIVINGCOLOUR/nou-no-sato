@@ -1,0 +1,76 @@
+flowchart TD
+  %% Nou no Sato Phase 1 screen transition design
+  %% Solid lines: Phase 1 candidates. Dotted lines: Future / Later.
+
+  Home["S01 ホーム / ランディング"]
+
+  Members["S02 仲間を探す一覧"]
+  MemberDetail["S03 仲間プロフィール詳細"]
+
+  Events["S04 イベント一覧<br/>運営登録イベント"]
+  EventDetail["S05 イベント詳細"]
+
+  Learn["S06 農法を学ぶ一覧"]
+  MethodDetail["S07 農法詳細"]
+
+  Notes["S08 畑ノート一覧<br/>基本非公開"]
+  NoteCreate["S09 畑ノート作成・編集"]
+  NoteDetail["S10 畑ノート詳細"]
+
+  NativeMap["S11 在来種マップ"]
+  NativeDetail["S12 在来種詳細"]
+
+  MyPage["S13 マイページ"]
+  Settings["S14 設定・公開範囲説明"]
+
+  Trouble["F01 困りごとから探す<br/>Future / Later"]
+  QA["F02 Q&A<br/>Future / Later"]
+  Safety["F03 通報・ブロック・冷却<br/>Future / Later"]
+  Seasonal["F04 季節チャレンジ<br/>Future / Later"]
+  VirtualFarm["F05 仮想畑<br/>Future / Later"]
+
+  Home --> Members
+  Members --> MemberDetail
+  MemberDetail --> Events
+  MemberDetail --> EventDetail
+
+  Home --> Events
+  Events --> EventDetail
+  EventDetail --> MyPage
+
+  Home --> Learn
+  Learn --> MethodDetail
+  MethodDetail --> Notes
+  MethodDetail --> NoteCreate
+
+  Home --> Notes
+  Notes --> NoteCreate
+  Notes --> NoteDetail
+  NoteDetail --> NoteCreate
+  Notes --> MyPage
+
+  Home --> NativeMap
+  NativeMap --> NativeDetail
+  NativeDetail --> NativeMap
+
+  Home --> MyPage
+  MyPage --> Notes
+  MyPage --> Events
+  MyPage --> Settings
+
+  Home -. "Future / Later" .-> Trouble
+  Trouble -. "必要なら学習へ接続" .-> Learn
+  Home -. "Future / Later" .-> QA
+  QA -. "安全機能とセット" .-> Safety
+  Notes -. "Future / Later" .-> Seasonal
+  Notes -. "Future / Later" .-> VirtualFarm
+
+  classDef phase fill:#eef8e7,stroke:#2e7d32,stroke-width:2px,color:#173f1b;
+  classDef privacy fill:#fff7e8,stroke:#f59a23,stroke-width:2px,color:#5f3e16;
+  classDef future fill:#f4f1eb,stroke:#9b8a74,stroke-dasharray:5 5,color:#5d5142;
+  classDef home fill:#e4f3d8,stroke:#1f6b2b,stroke-width:3px,color:#173f1b;
+
+  class Home home;
+  class Members,MemberDetail,Events,EventDetail,Learn,MethodDetail,NativeMap,NativeDetail,MyPage,Settings phase;
+  class Notes,NoteCreate,NoteDetail privacy;
+  class Trouble,QA,Safety,Seasonal,VirtualFarm future;

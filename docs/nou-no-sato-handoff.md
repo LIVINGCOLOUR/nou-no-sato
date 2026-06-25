@@ -1,4 +1,4 @@
-﻿# 農の里 引き継ぎメモ
+# 農の里 引き継ぎメモ
 
 この文書は、次のChatGPT/Codexスレッドにそのまま貼って作業再開できるようにするための引き継ぎです。
 
@@ -143,3 +143,9 @@ python -m http.server 8000
 ```text
 http://localhost:8000/index.html
 ```
+
+## 画面遷移設計
+
+- 画面遷移設計は `docs/nou-no-sato-screen-transition.md` に整理しています。
+- Mermaid図は `docs/nou-no-sato-screen-flow.mmd` です。
+- ブラウザ確認用の静的図は `docs/nou-no-sato-screen-flow.html` です。
