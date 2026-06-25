@@ -7,296 +7,379 @@
     <style>
       :root {
         --green-900: #173f1b;
-        --green-800: #245c25;
+        --green-800: #245f29;
         --green-700: #2e7d32;
         --green-100: #eef8e7;
+        --green-050: #f8fbf3;
         --cream: #fff7e8;
-        --paper: #fffdf7;
-        --mist: #f6fbef;
         --orange: #f59a23;
         --soil: #8d6e63;
-        --line: #dce9cf;
         --future: #f4f1eb;
+        --line: #dce9cf;
         --ink: #213223;
         --muted: #657567;
         --shadow: 0 16px 34px rgba(38, 91, 42, 0.12);
       }
 
       * { box-sizing: border-box; }
-
+      html, body { max-width: 100%; overflow-x: hidden; }
       body {
         margin: 0;
+        font-family: "Noto Sans JP", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         color: var(--ink);
-        font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, system-ui, sans-serif;
-        line-height: 1.7;
         background:
-          linear-gradient(180deg, rgba(255, 253, 247, 0.98), rgba(246, 252, 239, 0.96) 48%, rgba(255, 247, 232, 0.7)),
-          repeating-linear-gradient(90deg, rgba(46, 125, 50, 0.035) 0 1px, transparent 1px 72px);
+          radial-gradient(circle at top left, rgba(174, 213, 129, 0.24), transparent 32rem),
+          linear-gradient(180deg, #fbf8ef 0%, #ffffff 46%, #f8fbf3 100%);
       }
 
       main {
-        width: min(100% - 28px, 1180px);
+        width: min(calc(100% - 32px), 1180px);
         margin: 0 auto;
-        padding: 32px 0 72px;
+        padding: 28px 0 48px;
       }
 
       .hero {
-        border: 1px solid rgba(46, 125, 50, 0.14);
-        border-radius: 18px;
-        padding: clamp(24px, 4vw, 48px);
+        border: 1px solid rgba(46, 125, 50, 0.18);
+        border-radius: 22px;
+        padding: 28px;
         background:
-          linear-gradient(135deg, rgba(255, 253, 247, 0.96), rgba(238, 248, 231, 0.86)),
-          linear-gradient(155deg, transparent 0 58%, rgba(168, 214, 109, 0.24) 58% 74%, transparent 74%);
+          linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(238, 248, 231, 0.88)),
+          radial-gradient(circle at 92% 12%, rgba(245, 154, 35, 0.18), transparent 18rem);
         box-shadow: var(--shadow);
       }
 
       .eyebrow {
         margin: 0 0 8px;
         color: var(--green-700);
-        font-size: 0.82rem;
         font-weight: 900;
         letter-spacing: 0;
-        text-transform: uppercase;
       }
 
-      h1, h2, h3 { color: var(--green-800); line-height: 1.25; }
-      h1 { margin: 0; font-size: clamp(2.4rem, 8vw, 5.4rem); }
-      h2 { margin: 0 0 16px; font-size: clamp(1.5rem, 3vw, 2.2rem); }
-      h3 { margin: 0; font-size: 1rem; }
-      p { margin: 0; }
-
+      h1, h2, h3, p { margin: 0; }
+      h1 {
+        color: var(--green-900);
+        font-size: clamp(2rem, 5vw, 4.8rem);
+        line-height: 1.05;
+        letter-spacing: 0;
+        overflow-wrap: anywhere;
+        word-break: break-all;
+      }
+      h2 {
+        color: var(--green-800);
+        font-size: clamp(1.25rem, 2.4vw, 2rem);
+        margin-bottom: 14px;
+      }
+      h3 {
+        color: var(--green-900);
+        font-size: 1rem;
+        line-height: 1.35;
+      }
       .lead {
+        margin-top: 14px;
         max-width: 820px;
-        margin-top: 16px;
-        color: #27442a;
-        font-size: 1.05rem;
+        line-height: 1.85;
+        color: var(--muted);
         font-weight: 700;
+        overflow-wrap: anywhere;
       }
 
-      .legend {
+      .legend, .summary {
         display: flex;
         flex-wrap: wrap;
         gap: 10px;
-        margin-top: 22px;
+        margin-top: 20px;
       }
 
-      .legend span, .tag {
+      .tag, .legend span {
         display: inline-flex;
         align-items: center;
         min-height: 30px;
+        padding: 6px 10px;
         border-radius: 999px;
-        padding: 5px 11px;
         font-size: 0.82rem;
         font-weight: 900;
+        line-height: 1.2;
+        flex: 0 0 auto;
+        max-width: 100%;
+        white-space: normal;
       }
-
-      .legend .phase, .tag.phase { color: var(--green-800); background: var(--green-100); border: 1px solid rgba(46, 125, 50, 0.2); }
-      .legend .privacy, .tag.privacy { color: #6a4314; background: var(--cream); border: 1px solid rgba(245, 154, 35, 0.35); }
-      .legend .future, .tag.future { color: #5d5142; background: var(--future); border: 1px dashed #a99b88; }
+      .core { color: var(--green-800); background: var(--green-100); border: 1px solid rgba(46, 125, 50, 0.24); }
+      .inline { color: #405c25; background: #fbfff3; border: 1px dashed #8ab465; }
+      .future { color: #5d5142; background: var(--future); border: 1px dashed #a99b88; }
+      .privacy { color: #6a4314; background: var(--cream); border: 1px solid rgba(245, 154, 35, 0.36); }
 
       section { margin-top: 42px; }
+
+      .priority-grid {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr 1fr;
+        gap: 14px;
+      }
+
+      .priority-card, .node, .screen-card {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.88);
+        box-shadow: 0 10px 24px rgba(38, 91, 42, 0.08);
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+
+      .priority-card { padding: 18px; }
+      .priority-card strong {
+        display: block;
+        color: var(--green-900);
+        font-size: 1.05rem;
+        margin-bottom: 10px;
+      }
+      .priority-card ul {
+        margin: 0;
+        padding-left: 1.1rem;
+        color: var(--muted);
+        line-height: 1.7;
+        font-weight: 700;
+      }
+      .priority-card.inline { background: linear-gradient(180deg, #fff, #fbfff3); }
+      .priority-card.future { background: var(--future); box-shadow: none; }
 
       .flow {
         display: grid;
         gap: 18px;
       }
-
-      .row {
+      .home-row { display: grid; place-items: center; }
+      .branches {
         display: grid;
-        grid-template-columns: 220px 1fr;
-        gap: 18px;
-        align-items: stretch;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 12px;
       }
-
+      .branch {
+        display: grid;
+        gap: 8px;
+        align-content: start;
+      }
       .node {
-        position: relative;
-        border: 1px solid var(--line);
-        border-radius: 12px;
+        min-height: 128px;
         padding: 14px;
-        background: rgba(255, 253, 247, 0.96);
-        box-shadow: 0 10px 22px rgba(38, 91, 42, 0.08);
       }
-
       .node.home {
+        width: min(100%, 480px);
+        min-height: 0;
         border-color: rgba(46, 125, 50, 0.34);
+        border-width: 2px;
         background: linear-gradient(180deg, #ffffff, #eef8e7);
       }
-
-      .node.privacy {
-        border-color: rgba(245, 154, 35, 0.38);
-        background: linear-gradient(180deg, #ffffff, #fff7e8);
+      .node.inline {
+        border-style: dashed;
+        background: #fbfff3;
+        box-shadow: none;
       }
-
       .node.future {
         border-style: dashed;
         border-color: #a99b88;
         background: var(--future);
+        box-shadow: none;
       }
-
+      .node.privacy {
+        border-color: rgba(245, 154, 35, 0.38);
+        background: linear-gradient(180deg, #ffffff, #fff7e8);
+      }
       .node small {
         display: block;
         color: var(--muted);
-        font-weight: 800;
-      }
-
-      .branches {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 14px;
-      }
-
-      .branch {
-        display: grid;
-        gap: 10px;
-      }
-
-      .connector {
-        display: grid;
-        place-items: center;
-        min-height: 28px;
-        color: var(--green-700);
         font-weight: 900;
+        margin-bottom: 6px;
       }
-
-      .connector::before {
-        content: "↓";
-        font-size: 1.35rem;
-      }
-
-      .future-band {
-        display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 12px;
-      }
-
-      .screen-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-      }
-
-      .screen-card {
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        padding: 14px;
-        background: rgba(255, 253, 247, 0.96);
-      }
-
-      .screen-card.future { border-style: dashed; background: var(--future); }
-      .screen-card.privacy { background: linear-gradient(180deg, #fff, #fff7e8); }
-
-      .screen-card p {
-        margin-top: 6px;
+      .node p, .screen-card p {
+        margin-top: 7px;
         color: var(--muted);
         font-size: 0.9rem;
+        line-height: 1.6;
+        font-weight: 700;
+      }
+      .connector {
+        height: 20px;
+        position: relative;
+      }
+      .connector::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 50%;
+        width: 2px;
+        background: var(--green-700);
+        transform: translateX(-50%);
+      }
+      .connector.inline::before {
+        background: repeating-linear-gradient(180deg, #8ab465 0 5px, transparent 5px 10px);
       }
 
-      .notes {
+      .future-band, .screen-grid {
+        display: grid;
+        gap: 12px;
+      }
+      .future-band { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+      .screen-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .screen-card { padding: 15px; }
+      .screen-card.inline { border-style: dashed; background: #fbfff3; box-shadow: none; }
+      .screen-card.future { border-style: dashed; background: var(--future); box-shadow: none; }
+      .screen-card .tag { margin-top: 12px; }
+
+      .note {
         border-left: 4px solid var(--orange);
-        border-radius: 10px;
-        padding: 14px 16px;
-        color: #5f4c2f;
-        background: rgba(255, 247, 232, 0.82);
+        padding: 12px 14px;
+        background: rgba(255, 247, 232, 0.75);
+        border-radius: 0 12px 12px 0;
+        color: #5f3e16;
+        font-weight: 800;
+        line-height: 1.7;
       }
 
-      @media (max-width: 900px) {
-        .row { grid-template-columns: 1fr; }
-        .branches { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        .future-band { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      @media (max-width: 980px) {
+        .priority-grid { grid-template-columns: 1fr; }
+        .branches, .future-band { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .screen-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       }
 
       @media (max-width: 620px) {
-        main { width: min(100% - 20px, 1180px); padding-top: 18px; }
-        .branches, .screen-grid, .future-band { grid-template-columns: 1fr; }
-        .hero { padding: 22px 18px; }
+        main { width: min(calc(100% - 20px), 1180px); padding-top: 18px; }
+        .hero { padding: 22px 18px; border-radius: 18px; }
+        h1 { font-size: clamp(1.15rem, 5.7vw, 1.55rem); line-height: 1.18; }
+        .lead { font-size: 0.9rem; line-height: 1.75; word-break: break-all; }
+        .legend { display: grid; grid-template-columns: 1fr; justify-items: start; }
+        .branches, .future-band, .screen-grid { grid-template-columns: 1fr; }
+        .node { min-height: 0; }
       }
     </style>
   </head>
   <body>
     <main>
       <header class="hero">
-        <p class="eyebrow">Nou no Sato / Phase 1 Screen Flow</p>
-        <h1>農の里 画面遷移図</h1>
-        <p class="lead">現在の中心価値である「地元の仲間・イベント・農法学習・非公開の畑ノート・在来種マップ」を主導線として整理した、設計確認用の静的HTMLです。実アプリではありません。</p>
+        <p class="eyebrow">Nou no Sato / Screen Flow Priority</p>
+        <h1>農の里 Phase 1 画面遷移図</h1>
+        <p class="lead">中心価値である「地元の仲間・イベント・農法学習・非公開の畑ノート・在来種マップ」を、最初に作る画面、同一画面内で代替する画面、Future扱いの導線に分けて整理した設計確認用HTMLです。</p>
         <div class="legend" aria-label="凡例">
-          <span class="phase">Phase 1候補</span>
-          <span class="privacy">非公開・安心設計</span>
+          <span class="core">Phase 1 Core</span>
+          <span class="inline">Inline / Card Expand</span>
           <span class="future">Future / Later</span>
+          <span class="privacy">非公開・位置情報なし</span>
         </div>
       </header>
 
+      <section aria-labelledby="priority">
+        <h2 id="priority">実装優先度</h2>
+        <div class="priority-grid">
+          <article class="priority-card">
+            <strong>A. 最初に作る画面</strong>
+            <ul>
+              <li>S01 ホーム</li>
+              <li>S02 仲間を探す一覧</li>
+              <li>S04-S05 イベント一覧・詳細</li>
+              <li>S06-S07 農法一覧・詳細</li>
+              <li>S08-S09 畑ノート一覧・作成編集</li>
+              <li>S11-S12 在来種マップ・詳細</li>
+              <li>S13 マイページ</li>
+            </ul>
+          </article>
+          <article class="priority-card inline">
+            <strong>B. 初期は画面内で代替</strong>
+            <ul>
+              <li>S03 仲間プロフィール詳細</li>
+              <li>S10 畑ノート詳細</li>
+              <li>S14 設定・公開範囲説明</li>
+            </ul>
+          </article>
+          <article class="priority-card future">
+            <strong>C. Future / Later</strong>
+            <ul>
+              <li>困りごとから探す</li>
+              <li>条件付き相談</li>
+              <li>Q&A</li>
+              <li>通報・ブロック</li>
+              <li>季節チャレンジ</li>
+              <li>仮想畑</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
       <section aria-labelledby="main-flow">
-        <h2 id="main-flow">主要導線</h2>
+        <h2 id="main-flow">Phase 1 Core 導線</h2>
         <div class="flow">
-          <div class="row">
+          <div class="home-row">
             <article class="node home">
-              <small>S01</small>
+              <small>S01 / Phase 1 Core</small>
               <h3>ホーム / ランディング</h3>
               <p>中心価値を伝え、主要機能へ分岐する入口。</p>
             </article>
-            <div class="branches">
-              <div class="branch">
-                <article class="node"><small>S02</small><h3>仲間を探す一覧</h3><p>市町村程度の地域と関心で探す。</p></article>
-                <div class="connector"></div>
-                <article class="node"><small>S03</small><h3>仲間プロフィール詳細</h3><p>詳細住所ではなく、関心や活動を確認。</p></article>
-              </div>
-              <div class="branch">
-                <article class="node"><small>S04</small><h3>イベント一覧</h3><p>運営登録イベントを見る。</p></article>
-                <div class="connector"></div>
-                <article class="node"><small>S05</small><h3>イベント詳細</h3><p>日時、地域、内容、参加前の確認。</p></article>
-              </div>
-              <div class="branch">
-                <article class="node"><small>S06</small><h3>農法を学ぶ一覧</h3><p>優劣ではなく、考え方の違いを眺める。</p></article>
-                <div class="connector"></div>
-                <article class="node"><small>S07</small><h3>農法詳細</h3><p>特徴、注意点、観察の視点を学ぶ。</p></article>
-              </div>
-              <div class="branch">
-                <article class="node privacy"><small>S08</small><h3>畑ノート一覧</h3><p>本人だけの記録を振り返る。</p></article>
-                <div class="connector"></div>
-                <article class="node privacy"><small>S09 / S10</small><h3>作成・編集 / 詳細</h3><p>非公開、位置情報なしで記録する。</p></article>
-              </div>
-              <div class="branch">
-                <article class="node"><small>S11</small><h3>在来種マップ</h3><p>地域と在来種・固定種の関係を知る。</p></article>
-                <div class="connector"></div>
-                <article class="node"><small>S12</small><h3>在来種詳細</h3><p>背景、特徴、出典確認の方針を見る。</p></article>
-              </div>
-              <div class="branch">
-                <article class="node"><small>S13</small><h3>マイページ</h3><p>関心、参加予定、畑ノートを振り返る。</p></article>
-                <div class="connector"></div>
-                <article class="node"><small>S14</small><h3>設定・公開範囲説明</h3><p>地域粒度、非公開、通知を確認。</p></article>
-              </div>
+          </div>
+          <div class="branches">
+            <div class="branch">
+              <article class="node"><small>S02 / Core</small><h3>仲間を探す一覧</h3><p>市町村程度の地域と関心で探す。</p></article>
+              <div class="connector inline"></div>
+              <article class="node inline"><small>S03相当 / Inline</small><h3>プロフィールはカード展開</h3><p>DMがないため、初期は独立画面にしない。</p></article>
+            </div>
+            <div class="branch">
+              <article class="node"><small>S04 / Core</small><h3>イベント一覧</h3><p>運営登録イベントを見る。</p></article>
+              <div class="connector"></div>
+              <article class="node"><small>S05 / Core</small><h3>イベント詳細</h3><p>日時、地域、内容、参加前の確認。</p></article>
+            </div>
+            <div class="branch">
+              <article class="node"><small>S06 / Core</small><h3>農法を学ぶ一覧</h3><p>優劣ではなく、考え方の違いを眺める。</p></article>
+              <div class="connector"></div>
+              <article class="node"><small>S07 / Core</small><h3>農法詳細</h3><p>特徴、注意点、観察の視点を学ぶ。</p></article>
+            </div>
+            <div class="branch">
+              <article class="node privacy"><small>S08 / Core</small><h3>畑ノート一覧</h3><p>本人だけの記録を振り返る。</p></article>
+              <div class="connector"></div>
+              <article class="node privacy"><small>S09 / Core</small><h3>作成・編集</h3><p>非公開、位置情報なしで記録する。</p></article>
+              <div class="connector inline"></div>
+              <article class="node inline"><small>S10相当 / Inline</small><h3>詳細はカードで代替</h3><p>初期は一覧カードと編集画面で確認。</p></article>
+            </div>
+            <div class="branch">
+              <article class="node"><small>S11 / Core</small><h3>在来種マップ</h3><p>地域と在来種・固定種の関係を知る。</p></article>
+              <div class="connector"></div>
+              <article class="node"><small>S12 / Core</small><h3>在来種詳細</h3><p>背景、特徴、出典確認の方針を見る。</p></article>
+            </div>
+            <div class="branch">
+              <article class="node"><small>S13 / Core</small><h3>マイページ</h3><p>関心、参加予定、畑ノートを振り返る。</p></article>
+              <div class="connector inline"></div>
+              <article class="node inline"><small>S14相当 / Inline</small><h3>公開範囲は説明カード</h3><p>初期は独立画面にしない。</p></article>
             </div>
           </div>
         </div>
       </section>
 
       <section aria-labelledby="future-flow">
-        <h2 id="future-flow">Phase 1から外す導線</h2>
+        <h2 id="future-flow">Phase 1では作らない導線</h2>
         <div class="future-band">
-          <article class="node future"><small>F01</small><h3>困りごとから探す</h3><p>診断アプリに寄りすぎるためFuture。</p></article>
-          <article class="node future"><small>F02</small><h3>Q&A</h3><p>公開掲示板はPhase 1では作らない。</p></article>
-          <article class="node future"><small>F03</small><h3>通報・ブロック</h3><p>Q&AやDMとセットで将来検討。</p></article>
-          <article class="node future"><small>F04</small><h3>季節チャレンジ</h3><p>継続促進は利用確認後。</p></article>
-          <article class="node future"><small>F05</small><h3>仮想畑</h3><p>遊び要素はPhase 1後に判断。</p></article>
+          <article class="node future"><small>Future</small><h3>困りごとから探す</h3><p>診断アプリに寄りすぎるため保留。</p></article>
+          <article class="node future"><small>Future</small><h3>条件付き相談</h3><p>相談導線は安全設計とセットで再検討。</p></article>
+          <article class="node future"><small>Future</small><h3>Q&A</h3><p>公開掲示板はPhase 1では作らない。</p></article>
+          <article class="node future"><small>Future</small><h3>通報・ブロック</h3><p>Q&AやDMを作る場合に再検討。</p></article>
+          <article class="node future"><small>Future</small><h3>季節チャレンジ</h3><p>継続促進は利用確認後。</p></article>
+          <article class="node future"><small>Future</small><h3>仮想畑</h3><p>遊び要素はPhase 1後に判断。</p></article>
         </div>
       </section>
 
       <section aria-labelledby="screen-list">
         <h2 id="screen-list">画面カード一覧</h2>
         <div class="screen-grid">
-          <article class="screen-card"><h3>S01 ホーム</h3><p>主要導線への入口。</p><span class="tag phase">Phase 1候補</span></article>
-          <article class="screen-card"><h3>S02-S03 仲間</h3><p>地域と関心で探し、プロフィールを見る。</p><span class="tag phase">Phase 1候補</span></article>
-          <article class="screen-card"><h3>S04-S05 イベント</h3><p>運営登録イベントを一覧・詳細で確認。</p><span class="tag phase">Phase 1候補</span></article>
-          <article class="screen-card"><h3>S06-S07 農法学習</h3><p>農法の違いを中立に学ぶ。</p><span class="tag phase">Phase 1候補</span></article>
-          <article class="screen-card privacy"><h3>S08-S10 畑ノート</h3><p>基本非公開、位置情報なしで記録。</p><span class="tag privacy">安心設計</span></article>
-          <article class="screen-card"><h3>S11-S12 在来種</h3><p>運営整備データで地域文脈を知る。</p><span class="tag phase">Phase 1候補</span></article>
-          <article class="screen-card"><h3>S13-S14 マイページ / 設定</h3><p>振り返りと公開範囲の確認。</p><span class="tag phase">Phase 1候補</span></article>
-          <article class="screen-card future"><h3>Future導線</h3><p>困りごと、Q&A、通報、季節チャレンジ、仮想畑。</p><span class="tag future">Future / Later</span></article>
+          <article class="screen-card"><h3>S01 ホーム</h3><p>主要導線への入口。</p><span class="tag core">Phase 1 Core</span></article>
+          <article class="screen-card"><h3>S02 仲間を探す一覧</h3><p>S03はプロフィールカード展開で代替。</p><span class="tag core">Phase 1 Core</span></article>
+          <article class="screen-card inline"><h3>S03 仲間プロフィール詳細</h3><p>初期は独立画面にしない。</p><span class="tag inline">Inline / Card Expand</span></article>
+          <article class="screen-card"><h3>S04-S05 イベント</h3><p>運営登録イベントを一覧・詳細で確認。</p><span class="tag core">Phase 1 Core</span></article>
+          <article class="screen-card"><h3>S06-S07 農法学習</h3><p>農法の違いを中立に学ぶ。</p><span class="tag core">Phase 1 Core</span></article>
+          <article class="screen-card privacy"><h3>S08-S09 畑ノート</h3><p>基本非公開、位置情報なしで記録。</p><span class="tag privacy">非公開・位置情報なし</span></article>
+          <article class="screen-card inline"><h3>S10 畑ノート詳細</h3><p>初期は一覧カードと編集画面で代替。</p><span class="tag inline">Inline / Card Expand</span></article>
+          <article class="screen-card"><h3>S11-S12 在来種</h3><p>運営整備データで地域文脈を知る。</p><span class="tag core">Phase 1 Core</span></article>
+          <article class="screen-card"><h3>S13 マイページ</h3><p>振り返りと主要導線への入口。</p><span class="tag core">Phase 1 Core</span></article>
+          <article class="screen-card inline"><h3>S14 設定・公開範囲説明</h3><p>初期はマイページ内説明カードで代替。</p><span class="tag inline">Inline / Card Expand</span></article>
+          <article class="screen-card future"><h3>Future導線</h3><p>困りごと、条件付き相談、Q&A、通報、季節チャレンジ、仮想畑。</p><span class="tag future">Future / Later</span></article>
         </div>
       </section>
 
-      <section class="notes" aria-label="設計メモ">
-        <strong>設計メモ:</strong> 旧設計書の「学習から観察・記録へ戻る循環」は引き継ぎます。ただし、質問・回答中心ではなく、地元の仲間や運営登録イベントにつながる地域コミュニティとして再設計しています。
+      <section aria-labelledby="note">
+        <h2 id="note">設計メモ</h2>
+        <p class="note">最初の実装はA分類を中心に進めます。B分類は画面数を増やさないための代替表現、C分類はPhase 1では実装しない保留項目です。</p>
       </section>
     </main>
   </body>
