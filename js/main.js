@@ -1,4 +1,7 @@
-const { events, friends, methods, notes, routes, seeds } = window.NOU_NO_SATO_DATA;
+const data = window.NOU_NO_SATO_DATA;
+const { events, friends, methods, notes, profile, routes, seeds } = data;
+
+const app = document.querySelector("#app");
 
 const iconPaths = {
   users:
@@ -9,166 +12,577 @@ const iconPaths = {
   note: "M5 3h12l2 2v16H5V3Zm3 5h8V6H8v2Zm0 4h8v-2H8v2Zm0 4h5v-2H8v2Z",
   map:
     "M4 4.5 10 2l5 2.5L20 2v17.5L15 22l-5-2.5L4 22V4.5Zm7 .9v12.4l3 1.5V6.9l-3-1.5Z",
+  shield:
+    "M12 2 20 5v6c0 5-3.1 9-8 11-4.9-2-8-6-8-11V5l8-3Zm0 4.1L7 8v3c0 3.3 1.8 5.9 5 7.5 3.2-1.6 5-4.2 5-7.5V8l-5-1.9Z",
 };
 
-const qs = (selector) => document.querySelector(selector);
+const escapeHtml = (value) =>
+  String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 
-const createSvg = (name) => `
+const svgIcon = (name) => `
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="${iconPaths[name] ?? iconPaths.book}"></path>
   </svg>
 `;
 
-const routeGrid = qs("#route-grid");
-routeGrid.innerHTML = routes
-  .map(
-    (route) => `
-      <a class="route-card" href="#${route.id}">
-        <span class="route-icon">${createSvg(route.icon)}</span>
-        <span>
-          <h3>${route.title}</h3>
-          <p>${route.text}</p>
-        </span>
-      </a>
-    `,
-  )
-  .join("");
-
-const renderFriends = (filter = "all") => {
-  const list = qs("#friends-list");
-  const visibleFriends =
-    filter === "all" ? friends : friends.filter((friend) => friend.methods.includes(filter));
-
-  list.innerHTML = visibleFriends
-    .map(
-      (friend) => `
-        <article class="friend-card">
-          <div class="friend-top">
-            <div class="friend-photo ${friend.photo}" aria-hidden="true"></div>
-            <div>
-              <h3>${friend.area}</h3>
-              <p>${friend.interest}</p>
-            </div>
-          </div>
-          <div class="tag-row">
-            <span class="tag">${friend.status}</span>
-            ${friend.methods.map((method) => `<span class="tag">${method}</span>`).join("")}
-          </div>
-          <p>${friend.note}</p>
-          <span class="privacy-note">市町村程度・詳細住所なし</span>
-          <a class="card-action" href="#profile">プロフィールを見る</a>
-        </article>
-      `,
-    )
-    .join("");
+const getHashParts = () => {
+  const raw = window.location.hash.replace(/^#\/?/, "");
+  const normalized = raw || "home";
+  return normalized.split("/").filter(Boolean);
 };
 
-renderFriends();
+const setPageTitle = (title) => {
+  document.title = title ? `${title} | 農の里` : "農の里 | クリック可能Phase 1プロトタイプ";
+};
 
-document.querySelectorAll("[data-filter]").forEach((button) => {
-  button.addEventListener("click", () => {
-    document.querySelectorAll("[data-filter]").forEach((item) => item.classList.remove("is-active"));
-    button.classList.add("is-active");
-    renderFriends(button.dataset.filter);
+const methodById = (id) => methods.find((method) => method.id === id);
+const eventById = (id) => events.find((event) => event.id === id);
+const seedById = (id) => seeds.find((seed) => seed.id === id);
+
+const renderTags = (items) => items.map((item) => `<span class="tag">${escapeHtml(item)}</span>`).join("");
+
+const backLink = (href, label = "戻る") => `<a class="back-link" href="${href}">${label}</a>`;
+
+const pageFrame = ({ eyebrow, title, copy, body, actions = "", tone = "" }) => `
+  <section class="page ${tone}">
+    <header class="page-heading">
+      <p class="eyebrow">${escapeHtml(eyebrow)}</p>
+      <h1>${escapeHtml(title)}</h1>
+      <p>${escapeHtml(copy)}</p>
+      ${actions ? `<div class="page-actions">${actions}</div>` : ""}
+    </header>
+    ${body}
+  </section>
+`;
+
+const routeCards = () => `
+  <div class="route-grid">
+    ${routes
+      .map(
+        (route) => `
+          <a class="route-card" href="${route.path}">
+            <span class="route-icon">${svgIcon(route.icon)}</span>
+            <span>
+              <h3>${escapeHtml(route.title)}</h3>
+              <p>${escapeHtml(route.text)}</p>
+            </span>
+          </a>
+        `,
+      )
+      .join("")}
+  </div>
+`;
+
+const eventCard = (event, compact = false) => `
+  <article class="event-card ${compact ? "card-compact" : ""}">
+    <div class="event-top">
+      <div class="event-date">${escapeHtml(event.date)}<small>${escapeHtml(event.day)}</small></div>
+      <div>
+        <h3>${escapeHtml(event.title)}</h3>
+        <p>${escapeHtml(event.description)}</p>
+      </div>
+    </div>
+    <div class="event-meta">
+      <span>日時：${escapeHtml(event.time)}</span>
+      <span>地域：${escapeHtml(event.place)}</span>
+      <span>定員：${escapeHtml(event.capacity)}</span>
+      <span>登録：運営登録イベント</span>
+    </div>
+    <a class="card-action" href="#/events/${event.id}">詳細を見る</a>
+  </article>
+`;
+
+const friendCard = (friend) => `
+  <article class="friend-card">
+    <details>
+      <summary>
+        <span class="friend-photo ${friend.photo}" aria-hidden="true"></span>
+        <span>
+          <strong>${escapeHtml(friend.displayName)}</strong>
+          <em>${escapeHtml(friend.area)}｜${escapeHtml(friend.status)}</em>
+        </span>
+      </summary>
+      <div class="detail-panel">
+        <h3>${escapeHtml(friend.interest)}</h3>
+        <div class="tag-row">${renderTags(friend.methods)}</div>
+        <p>${escapeHtml(friend.note)}</p>
+        <p><strong>活動:</strong> ${escapeHtml(friend.activity)}</p>
+        <p><strong>つながり方:</strong> ${escapeHtml(friend.joinHint)}</p>
+        <span class="privacy-note">市町村程度・詳細住所なし・DMなし</span>
+        <a class="card-action" href="#/events/${friend.eventId}">関連イベントを見る</a>
+      </div>
+    </details>
+  </article>
+`;
+
+const methodCard = (method) => `
+  <article class="method-card method-${method.color}">
+    <h3>${escapeHtml(method.name)}</h3>
+    <p>${escapeHtml(method.summary)}</p>
+    <ul class="method-list">
+      <li><strong>耕すか</strong>${escapeHtml(method.values.tilling)}</li>
+      <li><strong>肥料の考え方</strong>${escapeHtml(method.values.fertilizer)}</li>
+      <li><strong>草の扱い</strong>${escapeHtml(method.values.grass)}</li>
+      <li><strong>農薬の考え方</strong>${escapeHtml(method.values.pesticide)}</li>
+    </ul>
+    <a class="card-action" href="#/learn/${method.id}">詳しく見る</a>
+  </article>
+`;
+
+const noteCard = (note) => `
+  <article class="note-card">
+    <div class="note-photo ${note.photo}" aria-hidden="true"></div>
+    <h3>${escapeHtml(note.date)}｜${escapeHtml(note.crop)}</h3>
+    <div class="tag-row">
+      <span class="tag">${escapeHtml(note.method)}</span>
+      <span class="tag">非公開</span>
+      <span class="tag">位置情報なし</span>
+    </div>
+    <p>${escapeHtml(note.memo)}</p>
+    <p>学び：${escapeHtml(note.learning)}</p>
+  </article>
+`;
+
+const seedCard = (seed) => `
+  <article class="seed-card">
+    <div class="seed-top">
+      <div class="seed-photo ${seed.photo}" aria-hidden="true"></div>
+      <div>
+        <h3>${escapeHtml(seed.area)}</h3>
+        <p>${escapeHtml(seed.name)}</p>
+      </div>
+    </div>
+    <p>${escapeHtml(seed.note)}</p>
+    <span class="privacy-note">運営確認前提・詳細地点なし</span>
+    <a class="card-action" href="#/native-varieties/${seed.id}">背景を見る</a>
+  </article>
+`;
+
+const renderHome = () =>
+  pageFrame({
+    eyebrow: "自然農・自然栽培・有機農法に関心のある人へ",
+    title: "農の里",
+    copy: "地元の仲間、運営登録イベント、農法の学び、非公開の畑ノート、在来種マップへつながる静的プロトタイプです。",
+    tone: "home-view",
+    actions: `
+      <a class="button button-primary" href="#/members">仲間を探す</a>
+      <a class="button button-light" href="#/events">イベントを見る</a>
+      <a class="button button-ghost" href="#/notes/new">畑ノートを書く</a>
+    `,
+    body: `
+      <section class="hero-panel" aria-label="農の里の概要">
+        <div class="hero-visual" aria-hidden="true">
+          <img class="hero-image" src="./assets/visuals/hero-satoyama.jpg" alt="" />
+        </div>
+        <div class="hero-copy-panel">
+          <h2>小さくつながり、学び、記録する。</h2>
+          <p>相談アプリではなく、地域の人とリアルな場につながるための導線確認用UIです。</p>
+          <div class="hero-points">
+            <span>市町村程度の地域表示</span>
+            <span>畑ノートは基本非公開</span>
+            <span>農法比較は優劣なし</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-block" aria-labelledby="route-title">
+        <div class="section-heading">
+          <span class="section-number">01</span>
+          <div>
+            <p class="eyebrow">Phase 1 Core</p>
+            <h2 id="route-title">主要導線</h2>
+          </div>
+        </div>
+        ${routeCards()}
+      </section>
+
+      <section class="section-block two-column">
+        <div>
+          <div class="section-heading compact-heading">
+            <span class="section-number">02</span>
+            <div>
+              <p class="eyebrow">Recent Events</p>
+              <h2>直近イベント</h2>
+            </div>
+          </div>
+          <div class="stack-list">${events.slice(0, 2).map((event) => eventCard(event, true)).join("")}</div>
+        </div>
+        <div>
+          <div class="section-heading compact-heading">
+            <span class="section-number">03</span>
+            <div>
+              <p class="eyebrow">Private Notes</p>
+              <h2>畑ノートの一部</h2>
+            </div>
+          </div>
+          <div class="card-grid compact-grid">${notes.slice(0, 2).map(noteCard).join("")}</div>
+        </div>
+      </section>
+
+      <section class="section-block two-column">
+        <div>
+          <div class="section-heading compact-heading">
+            <span class="section-number">04</span>
+            <div>
+              <p class="eyebrow">Local Friends</p>
+              <h2>仲間の一部</h2>
+            </div>
+          </div>
+          <div class="stack-list">${friends.slice(0, 2).map(friendCard).join("")}</div>
+        </div>
+        <div>
+          <div class="section-heading compact-heading">
+            <span class="section-number">05</span>
+            <div>
+              <p class="eyebrow">Native Varieties</p>
+              <h2>在来種マップの入口</h2>
+            </div>
+          </div>
+          <div class="card-grid compact-grid">${seeds.slice(0, 2).map(seedCard).join("")}</div>
+        </div>
+      </section>
+    `,
   });
+
+const renderMembers = () =>
+  pageFrame({
+    eyebrow: "Local Friends",
+    title: "仲間を探す一覧",
+    copy: "本名、詳細住所、畑の正確な場所は出さず、市町村程度の地域と関心ごとで探します。プロフィール詳細はカード展開で代替します。",
+    actions: `
+      ${backLink("#/home", "ホームへ戻る")}
+      <a class="button button-light" href="#/events">イベントを見る</a>
+    `,
+    body: `
+      <div class="toolbar" aria-label="仲間検索の条件">
+        <span class="chip is-active">すべて</span>
+        <span class="chip">自然農</span>
+        <span class="chip">有機農法</span>
+        <span class="chip">菌ちゃん農法</span>
+      </div>
+      <div class="card-grid">${friends.map(friendCard).join("")}</div>
+    `,
+  });
+
+const renderEvents = () =>
+  pageFrame({
+    eyebrow: "Real Events",
+    title: "イベント一覧",
+    copy: "運営登録イベントだけを一覧します。誰でもイベント作成できる導線はありません。",
+    actions: `
+      ${backLink("#/home", "ホームへ戻る")}
+      <a class="button button-light" href="#/mypage">参加予定を見る</a>
+    `,
+    tone: "warm-view",
+    body: `<div class="card-grid event-grid">${events.map((event) => eventCard(event)).join("")}</div>`,
+  });
+
+const renderEventDetail = (id) => {
+  const event = eventById(id);
+  if (!event) return renderNotFound("イベントが見つかりません", "#/events");
+
+  return pageFrame({
+    eyebrow: "Event Detail",
+    title: event.title,
+    copy: "参加判断に必要な情報を確認する静的詳細画面です。参加ボタンは見た目だけで、登録処理はありません。",
+    actions: `
+      ${backLink("#/events", "イベント一覧へ戻る")}
+      <a class="button button-light" href="#/mypage">マイページへ</a>
+    `,
+    tone: "warm-view",
+    body: `
+      <article class="detail-card">
+        <div class="detail-visual ${event.photo}" aria-hidden="true"></div>
+        <div class="detail-body">
+          <span class="privacy-note">運営登録イベント</span>
+          <dl class="detail-list">
+            <div><dt>日時</dt><dd>${escapeHtml(event.date)}(${escapeHtml(event.day)}) ${escapeHtml(event.time)}</dd></div>
+            <div><dt>地域</dt><dd>${escapeHtml(event.place)}</dd></div>
+            <div><dt>定員</dt><dd>${escapeHtml(event.capacity)}</dd></div>
+            <div><dt>主催</dt><dd>${escapeHtml(event.host)}</dd></div>
+            <div><dt>持ち物</dt><dd>${escapeHtml(event.belongings)}</dd></div>
+          </dl>
+          <p>${escapeHtml(event.description)}</p>
+          <p class="form-help">${escapeHtml(event.note)}</p>
+          <button class="button button-primary" type="button">参加する（ダミー）</button>
+        </div>
+      </article>
+    `,
+  });
+};
+
+const renderLearn = () =>
+  pageFrame({
+    eyebrow: "Learn Farming Styles",
+    title: "農法を学ぶ一覧",
+    copy: "どれが優れているかではなく、考え方、条件、続けやすさの違いとして眺めます。",
+    actions: backLink("#/home", "ホームへ戻る"),
+    body: `
+      <p class="method-note">
+        比較は優劣づけではありません。畑の広さ、土の状態、地域の気候、続けやすさによって選び方が変わる前提です。
+      </p>
+      <div class="method-board">${methods.map(methodCard).join("")}</div>
+    `,
+  });
+
+const renderMethodDetail = (id) => {
+  const method = methodById(id);
+  if (!method) return renderNotFound("農法が見つかりません", "#/learn");
+
+  return pageFrame({
+    eyebrow: "Method Detail",
+    title: method.name,
+    copy: "農法の正解を決める画面ではなく、考え方の違いと観察の入口を確認する画面です。",
+    actions: `
+      ${backLink("#/learn", "農法一覧へ戻る")}
+      <a class="button button-light" href="#/notes/new">記録してみる</a>
+    `,
+    body: `
+      <article class="detail-card method-detail method-${method.color}">
+        <div class="detail-body">
+          <span class="privacy-note">優劣ではなく違いとして理解</span>
+          <h2>基本の考え方</h2>
+          <p>${escapeHtml(method.summary)}</p>
+          <h2>試しやすい入口</h2>
+          <p>${escapeHtml(method.entry)}</p>
+          <h2>注意点</h2>
+          <p>${escapeHtml(method.caution)}</p>
+          <h2>見る視点</h2>
+          <p>${escapeHtml(method.perspective)}</p>
+        </div>
+        <aside class="side-panel">
+          <h3>比較軸</h3>
+          <ul class="method-list">
+            <li><strong>耕すか</strong>${escapeHtml(method.values.tilling)}</li>
+            <li><strong>肥料</strong>${escapeHtml(method.values.fertilizer)}</li>
+            <li><strong>草</strong>${escapeHtml(method.values.grass)}</li>
+            <li><strong>農薬</strong>${escapeHtml(method.values.pesticide)}</li>
+          </ul>
+        </aside>
+      </article>
+    `,
+  });
+};
+
+const renderNotes = () =>
+  pageFrame({
+    eyebrow: "Private Field Notes",
+    title: "畑ノート一覧",
+    copy: "自分の観察を振り返るための画面です。Phase 1では基本非公開で、位置情報や詳細な畑住所は扱いません。",
+    actions: `
+      ${backLink("#/home", "ホームへ戻る")}
+      <a class="button button-primary" href="#/notes/new">新しく記録する</a>
+    `,
+    body: `
+      <div class="trust-list">
+        <div><strong>基本非公開</strong><span>公開タイムラインはありません。</span></div>
+        <div><strong>位置情報なし</strong><span>畑住所や正確な地点は扱いません。</span></div>
+        <div><strong>自分の学び</strong><span>共有よりも振り返りを優先します。</span></div>
+      </div>
+      <div class="card-grid compact-grid">${notes.map(noteCard).join("")}</div>
+    `,
+  });
+
+const renderNoteForm = () =>
+  pageFrame({
+    eyebrow: "Create Field Note",
+    title: "畑ノート作成・編集",
+    copy: "入力体験を確認するための静的フォームです。保存処理やlocalStorage保存はありません。",
+    actions: backLink("#/notes", "畑ノート一覧へ戻る"),
+    body: `
+      <div class="note-layout">
+        <form class="note-form" aria-label="畑ノート入力イメージ">
+          <label>
+            日付
+            <input type="date" value="2026-06-21" />
+          </label>
+          <label>
+            作物
+            <input type="text" value="ミニトマト" />
+          </label>
+          <label>
+            写真
+            <span class="fake-upload">写真を選ぶ見た目だけ</span>
+          </label>
+          <label>
+            メモ
+            <textarea rows="5">葉が少し黄色い。水やりの間隔を見直す。</textarea>
+          </label>
+          <label class="toggle-line">
+            <input type="checkbox" checked disabled />
+            公開設定：非公開
+          </label>
+          <p class="form-help">位置情報や詳細な畑住所は扱いません。保存ボタンはプロトタイプ用の見た目です。</p>
+          <button class="button button-primary" type="button">保存する（ダミー）</button>
+        </form>
+        <aside class="side-panel">
+          <h3>記録の方針</h3>
+          <p>日々の変化を自分で振り返るための場所です。他人の畑記録を閲覧する導線は作りません。</p>
+          <div class="tag-row">
+            <span class="tag">非公開</span>
+            <span class="tag">位置情報なし</span>
+            <span class="tag">共有前提なし</span>
+          </div>
+        </aside>
+      </div>
+    `,
+  });
+
+const renderNativeMap = () =>
+  pageFrame({
+    eyebrow: "Local Seed Map",
+    title: "在来種マップ",
+    copy: "本格地図ではなく、地域と在来種・固定種の関係を知るための地図風UIです。正確な採種場所や個人宅は表示しません。",
+    actions: backLink("#/home", "ホームへ戻る"),
+    body: `
+      <div class="seed-map">
+        <div class="map-panel" aria-label="地図風の在来種表示">
+          ${seeds.map((seed) => `<a class="map-pin ${seed.pin}" href="#/native-varieties/${seed.id}">${escapeHtml(seed.area)}</a>`).join("")}
+        </div>
+        <div class="card-grid compact-grid">${seeds.map(seedCard).join("")}</div>
+      </div>
+    `,
+  });
+
+const renderSeedDetail = (id) => {
+  const seed = seedById(id);
+  if (!seed) return renderNotFound("在来種情報が見つかりません", "#/native-map");
+
+  return pageFrame({
+    eyebrow: "Native Variety Detail",
+    title: seed.name,
+    copy: "地域と作物の背景を知るための静的詳細です。正確な地点や個人宅は表示しません。",
+    actions: backLink("#/native-map", "在来種マップへ戻る"),
+    body: `
+      <article class="detail-card">
+        <div class="detail-visual ${seed.photo}" aria-hidden="true"></div>
+        <div class="detail-body">
+          <span class="privacy-note">運営確認前提・詳細地点なし</span>
+          <dl class="detail-list">
+            <div><dt>地域</dt><dd>${escapeHtml(seed.area)}</dd></div>
+            <div><dt>作物分類</dt><dd>${escapeHtml(seed.category)}</dd></div>
+            <div><dt>情報源</dt><dd>${escapeHtml(seed.source)}</dd></div>
+          </dl>
+          <h2>背景</h2>
+          <p>${escapeHtml(seed.story)}</p>
+          <h2>特徴</h2>
+          <ul class="check-list">${seed.traits.map((trait) => `<li>${escapeHtml(trait)}</li>`).join("")}</ul>
+        </div>
+      </article>
+    `,
+  });
+};
+
+const renderMyPage = () =>
+  pageFrame({
+    eyebrow: "My Page",
+    title: "マイページ",
+    copy: "SNS的な自己表現ではなく、自分の関心、参加予定、畑ノートを軽く振り返る画面です。",
+    actions: `
+      ${backLink("#/home", "ホームへ戻る")}
+      <a class="button button-light" href="#/notes">畑ノートを見る</a>
+    `,
+    body: `
+      <section class="profile-panel">
+        <div class="profile-main">
+          <div class="avatar-placeholder" aria-hidden="true"></div>
+          <div>
+            <p class="profile-name">${escapeHtml(profile.displayName)}</p>
+            <p>${escapeHtml(profile.area)}｜${escapeHtml(profile.status)}</p>
+            <div class="tag-row">${renderTags(profile.interests)}</div>
+          </div>
+        </div>
+        <dl class="stats-grid">
+          <div><dt>畑ノート</dt><dd>${profile.noteCount}件</dd></div>
+          <div><dt>参加予定</dt><dd>${profile.upcomingEvents}件</dd></div>
+          <div><dt>お気に入り</dt><dd>${escapeHtml(profile.favoriteMethod)}</dd></div>
+        </dl>
+      </section>
+      <section class="section-block">
+        <div class="section-heading compact-heading">
+          <span class="section-number">${svgIcon("shield")}</span>
+          <div>
+            <p class="eyebrow">Privacy</p>
+            <h2>公開範囲の説明</h2>
+            <p>S14は初期の独立画面にせず、この説明カードで代替します。</p>
+          </div>
+        </div>
+        <div class="trust-list">
+          ${profile.privacy.map((item) => `<div><strong>${escapeHtml(item.split("は")[0] || "方針")}</strong><span>${escapeHtml(item)}</span></div>`).join("")}
+        </div>
+      </section>
+      <section class="section-block two-column">
+        <div>
+          <h2>参加予定イベント</h2>
+          <div class="stack-list">${events.slice(0, profile.upcomingEvents).map((event) => eventCard(event, true)).join("")}</div>
+        </div>
+        <div>
+          <h2>最近の畑ノート</h2>
+          <div class="card-grid compact-grid">${notes.slice(0, 2).map(noteCard).join("")}</div>
+        </div>
+      </section>
+    `,
+  });
+
+const renderNotFound = (message = "画面が見つかりません", href = "#/home") =>
+  pageFrame({
+    eyebrow: "Not Found",
+    title: message,
+    copy: "指定された静的画面はありません。主要導線から確認してください。",
+    actions: backLink(href, "戻る"),
+    body: routeCards(),
+  });
+
+const routeTable = {
+  home: () => renderHome(),
+  members: () => renderMembers(),
+  events: (parts) => (parts[1] ? renderEventDetail(parts[1]) : renderEvents()),
+  learn: (parts) => (parts[1] ? renderMethodDetail(parts[1]) : renderLearn()),
+  notes: (parts) => (parts[1] === "new" ? renderNoteForm() : renderNotes()),
+  "native-map": () => renderNativeMap(),
+  "native-varieties": (parts) => renderSeedDetail(parts[1]),
+  mypage: () => renderMyPage(),
+};
+
+const rootRouteFor = (parts) => parts[0] ?? "home";
+
+const updateActiveNav = (rootRoute) => {
+  document.querySelectorAll("[data-route]").forEach((link) => {
+    const route = link.dataset.route;
+    const isActive =
+      route === rootRoute ||
+      (route === "events" && rootRoute === "events") ||
+      (route === "learn" && rootRoute === "learn") ||
+      (route === "notes" && rootRoute === "notes") ||
+      (route === "native-map" && rootRoute === "native-varieties");
+
+    link.classList.toggle("is-active", isActive);
+  });
+};
+
+const renderApp = () => {
+  const parts = getHashParts();
+  const rootRoute = rootRouteFor(parts);
+  const view = routeTable[rootRoute] ? routeTable[rootRoute](parts) : renderNotFound();
+
+  app.innerHTML = view;
+  updateActiveNav(rootRoute);
+  setPageTitle(app.querySelector("h1")?.textContent ?? "");
+  window.scrollTo({ top: 0, behavior: "instant" });
+  app.focus({ preventScroll: true });
+};
+
+window.addEventListener("hashchange", renderApp);
+window.addEventListener("DOMContentLoaded", () => {
+  if (!window.location.hash) {
+    window.location.replace("#/home");
+    return;
+  }
+
+  renderApp();
 });
-
-qs("#events-list").innerHTML = events
-  .map(
-    (event) => `
-      <article class="event-card">
-        <div class="event-top">
-          <div class="event-date">${event.date}<small>${event.day}</small></div>
-          <div>
-            <h3>${event.title}</h3>
-            <p>${event.description}</p>
-          </div>
-        </div>
-        <div class="event-meta">
-          <span>場所：${event.place}</span>
-          <span>定員：${event.capacity}</span>
-          <span>登録：運営登録イベント</span>
-        </div>
-        <button class="button button-primary" type="button">参加する</button>
-      </article>
-    `,
-  )
-  .join("");
-
-qs("#method-board").innerHTML = methods
-  .map(
-    (method) => `
-      <article class="method-card method-${method.color}">
-        <h3>${method.name}</h3>
-        <ul class="method-list">
-          <li><strong>耕すか</strong>${method.values.tilling}</li>
-          <li><strong>肥料の考え方</strong>${method.values.fertilizer}</li>
-          <li><strong>草の扱い</strong>${method.values.grass}</li>
-          <li><strong>農薬の考え方</strong>${method.values.pesticide}</li>
-          <li><strong>試しやすい場面</strong>${method.values.beginner}</li>
-        </ul>
-      </article>
-    `,
-  )
-  .join("");
-
-qs("#notes-list").innerHTML = notes
-  .map(
-    (note) => `
-      <article class="note-card">
-        <div class="note-photo ${note.photo}" aria-hidden="true"></div>
-        <h3>${note.date}｜${note.crop}</h3>
-        <div class="tag-row">
-          <span class="tag">${note.method}</span>
-          <span class="tag">非公開</span>
-          <span class="tag">位置情報なし</span>
-        </div>
-        <p>${note.memo}</p>
-        <p>学び：${note.learning}</p>
-      </article>
-    `,
-  )
-  .join("");
-
-qs("#seeds-list").innerHTML = seeds
-  .map(
-    (seed) => `
-      <article class="seed-card">
-        <div class="seed-top">
-          <div class="seed-photo ${seed.photo}" aria-hidden="true"></div>
-          <div>
-            <h3>${seed.area}</h3>
-            <p>${seed.name}</p>
-          </div>
-        </div>
-        <p>${seed.note}</p>
-        <span class="privacy-note">運営整備データ</span>
-      </article>
-    `,
-  )
-  .join("");
-
-const navLinks = document.querySelectorAll(".bottom-nav a");
-const watchedSections = ["home", "friends", "events", "learn", "notes"]
-  .map((id) => document.getElementById(id))
-  .filter(Boolean);
-
-const observer = new IntersectionObserver(
-  (entries) => {
-    const visible = entries
-      .filter((entry) => entry.isIntersecting)
-      .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-
-    if (!visible) return;
-
-    navLinks.forEach((link) => {
-      link.classList.toggle("is-active", link.dataset.nav === visible.target.id);
-    });
-  },
-  {
-    rootMargin: "-35% 0px -55% 0px",
-    threshold: [0.1, 0.25, 0.5],
-  },
-);
-
-watchedSections.forEach((section) => observer.observe(section));

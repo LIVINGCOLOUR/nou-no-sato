@@ -3,16 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>農の里 | Phase 1 UI Prototype</title>
+    <title>農の里 | クリック可能Phase 1プロトタイプ</title>
     <meta
       name="description"
-      content="自然な栽培に関心のある地元の人が、ゆるくつながり、学び、畑の記録を残せる地域コミュニティアプリの静的UIプロトタイプ。"
+      content="自然な栽培に関心のある地元の人が、仲間、イベント、学び、非公開の畑ノート、在来種マップへつながる静的UIプロトタイプ。"
     />
     <link rel="stylesheet" href="./css/styles.css" />
   </head>
   <body>
     <header class="site-header" aria-label="農の里ヘッダー">
-      <a class="brand" href="#home" aria-label="農の里 ホーム">
+      <a class="brand" href="#/home" aria-label="農の里 ホーム">
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 32 32" role="img">
             <path d="M15 26c1-7 5-12 12-15-2 8-6 13-12 15Z" />
@@ -21,234 +21,47 @@
         </span>
         <span>
           <strong>農の里</strong>
-          <small>Phase 1 prototype</small>
+          <small>Phase 1 clickable prototype</small>
         </span>
       </a>
       <nav class="desktop-nav" aria-label="主要ナビゲーション">
-        <a href="#friends">仲間</a>
-        <a href="#events">イベント</a>
-        <a href="#learn">学ぶ</a>
-        <a href="#notes">ノート</a>
-        <a href="#seeds">在来種</a>
+        <a href="#/members" data-route="members">仲間</a>
+        <a href="#/events" data-route="events">イベント</a>
+        <a href="#/learn" data-route="learn">学ぶ</a>
+        <a href="#/notes" data-route="notes">ノート</a>
+        <a href="#/native-map" data-route="native-map">在来種</a>
+        <a href="#/mypage" data-route="mypage">マイページ</a>
       </nav>
     </header>
 
-    <main id="home">
-      <section class="hero" aria-labelledby="hero-title">
-        <div class="hero-visual" aria-hidden="true">
-          <img class="hero-image" src="./assets/visuals/hero-satoyama.jpg" alt="" />
-        </div>
-        <div class="hero-content">
-          <p class="eyebrow">自然農・自然栽培・有機農法に関心のある人へ</p>
-          <h1 id="hero-title">農の里</h1>
-          <p class="hero-copy">
-            自然な栽培に関心のある地元の人が、ゆるくつながり、学び、畑の記録を残せる場所。
-          </p>
-          <div class="hero-points" aria-label="農の里の中心価値">
-            <span>地元の仲間</span>
-            <span>運営登録イベント</span>
-            <span>非公開の畑ノート</span>
-          </div>
-          <div class="hero-actions" aria-label="はじめの導線">
-            <a class="button button-primary" href="#friends">仲間を探す</a>
-            <a class="button button-light" href="#events">イベントを見る</a>
-            <a class="button button-ghost" href="#learn">農法を学ぶ</a>
-          </div>
-          <p class="notice">
-            AI相談やDMに頼らず、公開範囲を控えめにしながら、地元の人・学び・リアルな場につながります。
-          </p>
-        </div>
-      </section>
-
-      <section class="section intro-section" aria-labelledby="intro-title">
-        <div class="section-heading">
-          <span class="section-number">01</span>
-          <div>
-            <p class="eyebrow">Phase 1 Scope</p>
-            <h2 id="intro-title">小さくつながり、続けられる導線</h2>
-          </div>
-        </div>
-        <div class="route-grid" id="route-grid"></div>
-        <div class="trust-list" aria-label="安心して使うための方針">
-          <div>
-            <strong>地域表示はゆるく</strong>
-            <span>仲間探しは市町村程度。畑の正確な場所は表示しません。</span>
-          </div>
-          <div>
-            <strong>記録は自分のために</strong>
-            <span>畑ノートは基本非公開。共有よりも振り返りを大切にします。</span>
-          </div>
-          <div>
-            <strong>農法は比べて学ぶ</strong>
-            <span>正解を決めず、条件や考え方の違いとして眺めます。</span>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" id="friends" aria-labelledby="friends-title">
-        <div class="section-heading">
-          <span class="section-number">02</span>
-          <div>
-            <p class="eyebrow">Local Friends</p>
-            <h2 id="friends-title">地元の仲間を探す</h2>
-            <p>本名や詳細住所、畑の正確な場所は出さず、市町村程度の地域と関心ごとでゆるく見つける画面です。</p>
-          </div>
-        </div>
-        <div class="toolbar" aria-label="仲間検索の条件">
-          <button class="chip is-active" type="button" data-filter="all">すべて</button>
-          <button class="chip" type="button" data-filter="自然農">自然農</button>
-          <button class="chip" type="button" data-filter="有機農法">有機農法</button>
-          <button class="chip" type="button" data-filter="菌ちゃん農法">菌ちゃん農法</button>
-        </div>
-        <div class="card-grid" id="friends-list"></div>
-      </section>
-
-      <section class="section warm-band" id="events" aria-labelledby="events-title">
-        <div class="section-heading">
-          <span class="section-number">03</span>
-          <div>
-            <p class="eyebrow">Real Events</p>
-            <h2 id="events-title">イベントを見る</h2>
-            <p>運営側が登録した地域イベントを一覧し、開催場所と定員を確認できます。</p>
-          </div>
-        </div>
-        <div class="card-grid event-grid" id="events-list"></div>
-      </section>
-
-      <section class="section" id="learn" aria-labelledby="learn-title">
-        <div class="section-heading">
-          <span class="section-number">04</span>
-          <div>
-            <p class="eyebrow">Learn Farming Styles</p>
-            <h2 id="learn-title">農法を学ぶ</h2>
-            <p>どれが正解かを決めず、考え方の違いをやさしく比較します。</p>
-          </div>
-        </div>
-        <p class="method-note">
-          比較は優劣づけではありません。畑の広さ、土の状態、地域の気候、続けやすさによって選び方が変わる前提です。
-        </p>
-        <div class="method-board" id="method-board"></div>
-      </section>
-
-      <section class="section" id="notes" aria-labelledby="notes-title">
-        <div class="section-heading">
-          <span class="section-number">05</span>
-          <div>
-            <p class="eyebrow">Private Field Notes</p>
-            <h2 id="notes-title">畑ノートを記録する</h2>
-            <p>写真と一言で日々の気づきを残すイメージ。Phase 1では自分だけの記録を基本にします。</p>
-          </div>
-        </div>
-        <div class="note-layout">
-          <form class="note-form" aria-label="畑ノート入力イメージ">
-            <label>
-              日付
-              <input type="date" value="2026-06-21" />
-            </label>
-            <label>
-              作物
-              <input type="text" value="ミニトマト" />
-            </label>
-            <label>
-              メモ
-              <textarea rows="4">葉が少し黄色い。水やりの間隔を見直す。</textarea>
-            </label>
-            <label class="toggle-line">
-              <input type="checkbox" checked disabled />
-              公開設定：非公開
-            </label>
-            <p class="form-help">位置情報や詳細な畑住所は扱わない想定です。必要なときだけ、自分で共有範囲を選びます。</p>
-            <button class="button button-primary" type="button">記録イメージを確認</button>
-          </form>
-          <div class="card-grid compact-grid" id="notes-list"></div>
-        </div>
-      </section>
-
-      <section class="section seed-section" id="seeds" aria-labelledby="seeds-title">
-        <div class="section-heading">
-          <span class="section-number">06</span>
-          <div>
-            <p class="eyebrow">Local Seed Map</p>
-            <h2 id="seeds-title">在来種マップを見る</h2>
-            <p>本格地図ではなく、運営確認済みの地域別カードとピン風UIで関心を高めるPhase 1の表現です。</p>
-          </div>
-        </div>
-        <div class="seed-map">
-          <div class="map-panel" aria-label="地図風の在来種表示">
-            <span class="map-pin pin-a">茨城県北</span>
-            <span class="map-pin pin-b">八郷周辺</span>
-            <span class="map-pin pin-c">県南地域</span>
-            <span class="map-pin pin-d">鹿行地域</span>
-          </div>
-          <div class="card-grid compact-grid" id="seeds-list"></div>
-        </div>
-      </section>
-
-      <section class="section profile-section" id="profile" aria-labelledby="profile-title">
-        <div class="section-heading">
-          <span class="section-number">07</span>
-          <div>
-            <p class="eyebrow">My Page</p>
-            <h2 id="profile-title">マイページの簡易イメージ</h2>
-          </div>
-        </div>
-        <div class="profile-panel">
-          <div class="profile-main">
-            <div class="avatar-placeholder" aria-hidden="true"></div>
-            <div>
-              <p class="profile-name">のうこさん</p>
-              <p>茨城県央エリア｜家庭菜園中</p>
-              <div class="tag-row">
-                <span class="tag">自然農</span>
-                <span class="tag">菌ちゃん農法</span>
-                <span class="tag">在来種に関心</span>
-              </div>
-            </div>
-          </div>
-          <dl class="stats-grid">
-            <div>
-              <dt>畑ノート</dt>
-              <dd>12件</dd>
-            </div>
-            <div>
-              <dt>参加予定</dt>
-              <dd>2件</dd>
-            </div>
-            <div>
-              <dt>お気に入り</dt>
-              <dd>自然栽培</dd>
-            </div>
-          </dl>
-        </div>
-      </section>
-    </main>
+    <main id="app" class="app-shell" tabindex="-1" aria-live="polite"></main>
 
     <nav class="bottom-nav" aria-label="スマートフォン用下部ナビ">
-      <a class="is-active" href="#home" data-nav="home">
+      <a href="#/home" data-route="home">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M3 11.5 12 4l9 7.5V21h-6v-6H9v6H3v-9.5Z" />
         </svg>
         <span>ホーム</span>
       </a>
-      <a href="#friends" data-nav="friends">
+      <a href="#/members" data-route="members">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M8 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm8.5 1a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7ZM2 21c.6-4 2.8-6.5 6-6.5S13.4 17 14 21H2Zm12.5 0c-.2-1.7-.8-3.2-1.7-4.3 1-.8 2.2-1.2 3.7-1.2 2.9 0 4.9 2.1 5.5 5.5h-7.5Z" />
         </svg>
         <span>仲間</span>
       </a>
-      <a href="#events" data-nav="events">
+      <a href="#/events" data-route="events">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M5 3h2v2h10V3h2v2h2v16H3V5h2V3Zm14 8H5v8h14v-8Z" />
         </svg>
         <span>イベント</span>
       </a>
-      <a href="#learn" data-nav="learn">
+      <a href="#/learn" data-route="learn">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M4 5.5C6.6 4.2 9.4 4.2 12 5.5c2.6-1.3 5.4-1.3 8 0V20c-2.6-1.2-5.4-1.2-8 0-2.6-1.2-5.4-1.2-8 0V5.5Zm7 2C9.4 6.8 7.7 6.7 6 7.2v9.9c1.7-.4 3.4-.3 5 .3V7.5Zm2 9.9c1.6-.6 3.3-.7 5-.3V7.2c-1.7-.5-3.4-.4-5 .3v9.9Z" />
         </svg>
         <span>学ぶ</span>
       </a>
-      <a href="#notes" data-nav="notes">
+      <a href="#/notes" data-route="notes">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M5 3h12l2 2v16H5V3Zm3 5h8V6H8v2Zm0 4h8v-2H8v2Zm0 4h5v-2H8v2Z" />
         </svg>

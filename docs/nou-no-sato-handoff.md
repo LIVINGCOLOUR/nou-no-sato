@@ -37,10 +37,11 @@ https://github.com/LIVINGCOLOUR/nou-no-sato.git
 ## 現在の実装状態
 
 - Phase 1静的UIプロトタイプです。
-- repo直下に `index.html` があります。
+- repo直下に `index.html` があり、hash routingで複数画面を切り替えます。
 - CSSは `css/styles.css` です。
 - JavaScriptは `js/main.js` です。
 - ダミーデータは `data/mock-data.js` です。
+- `#/home`, `#/members`, `#/events`, `#/events/e01`, `#/learn`, `#/learn/natural-farming`, `#/notes`, `#/notes/new`, `#/native-map`, `#/native-varieties/v01`, `#/mypage` を確認できます。
 - 画像素材は `assets/` 配下で管理します。
 - `assets/README.md` と `docs/README.md` があります。
 - root `README.md` もあります。
@@ -124,7 +125,7 @@ https://github.com/LIVINGCOLOUR/nou-no-sato.git
 2. 農法比較セクションの中立性レビューと文言調整。
 3. 畑ノート非公開方針がより伝わるUI調整。
 4. イベントカードの情報量整理。
-5. Phase 1 Coreを中心に、画面遷移のクリック可能プロトタイプを作る。
+5. クリック可能プロトタイプの導線をブラウザでレビューする。
 6. GitHub Pagesで静的デモを公開する準備。
 7. Phase 2のバックエンド候補をdocsに整理。
 
@@ -174,3 +175,4 @@ http://localhost:8000/index.html
 - 画面遷移設計は `docs/nou-no-sato-screen-transition.md` に整理しています。
 - Mermaid図は `docs/nou-no-sato-screen-flow.mmd` です。
 - ブラウザ確認用の静的図は `docs/nou-no-sato-screen-flow.html` です。
+- クリック可能プロトタイプのURL一覧は `docs/nou-no-sato-clickable-prototype.md` です。
