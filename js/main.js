@@ -43,10 +43,32 @@ const setPageTitle = (title) => {
 const methodById = (id) => methods.find((method) => method.id === id);
 const eventById = (id) => events.find((event) => event.id === id);
 const seedById = (id) => seeds.find((seed) => seed.id === id);
+const groupById = (id) => friends.find((group) => group.id === id);
+const eventsByGroup = (id) => events.filter((event) => event.hostGroupId === id);
 
 const renderTags = (items) => items.map((item) => `<span class="tag">${escapeHtml(item)}</span>`).join("");
 
 const backLink = (href, label = "戻る") => `<a class="back-link" href="${href}">${label}</a>`;
+
+const officialLinks = (links) => {
+  if (!links) return "";
+  const items = [
+    links.website ? { label: "公式サイト", url: links.website } : null,
+    links.instagram ? { label: "Instagram", url: links.instagram } : null,
+    links.sns ? { label: "公式SNS", url: links.sns } : null,
+  ].filter(Boolean);
+  if (!items.length) return "";
+  return `
+    <div class="link-row">
+      ${items
+        .map(
+          (item) =>
+            `<a class="official-link" href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.label)}<span aria-hidden="true">↗</span></a>`,
+        )
+        .join("")}
+    </div>
+  `;
+};
 
 const pageFrame = ({ eyebrow, title, copy, body, actions = "", tone = "" }) => `
   <section class="page ${tone}">
@@ -86,6 +108,7 @@ const eventCard = (event, compact = false) => `
         <h3>${escapeHtml(event.title)}</h3>
         <p class="event-line">${escapeHtml(event.place)}｜${escapeHtml(event.time)}｜定員${escapeHtml(event.capacity)}</p>
         <p>${escapeHtml(event.description)}</p>
+        <p class="event-host">主催：${escapeHtml(event.host)}</p>
       </div>
     </div>
     <div class="tag-row event-tags">
@@ -111,9 +134,9 @@ const friendCard = (friend) => `
         <div class="tag-row">${renderTags(friend.methods)}</div>
         <p>${escapeHtml(friend.note)}</p>
         <p><strong>活動:</strong> ${escapeHtml(friend.activity)}</p>
-        <p><strong>つながり方:</strong> ${escapeHtml(friend.joinHint)}</p>
-        <span class="privacy-note">市町村程度・詳細住所なし・DMなし</span>
-        <a class="card-action" href="#/events/${friend.eventId}">関連イベントを見る</a>
+        ${officialLinks(friend.links)}
+        <span class="privacy-note">市町村程度・直接連絡先なし・イベント参加でつながる</span>
+        <a class="card-action" href="#/groups/${friend.id}">団体ページ・イベントを見る</a>
       </div>
     </details>
   </article>
@@ -235,13 +258,15 @@ const renderEventDetail = (id) => {
   const event = eventById(id);
   if (!event) return renderNotFound("イベントが見つかりません", "#/events");
 
+  const host = groupById(event.hostGroupId);
+
   return pageFrame({
     eyebrow: "Event Detail",
     title: event.title,
     copy: "参加前に雰囲気と基本情報を確認する静的詳細画面です。実際の登録処理はありません。",
     actions: `
       ${backLink("#/events", "イベント一覧へ戻る")}
-      <a class="button button-light" href="#/mypage">マイページへ</a>
+      ${host ? `<a class="button button-light" href="#/groups/${host.id}">開催団体を見る</a>` : ""}
     `,
     tone: "warm-view",
     body: `
@@ -254,7 +279,7 @@ const renderEventDetail = (id) => {
             <div><dt>日時</dt><dd>${escapeHtml(event.date)}(${escapeHtml(event.day)}) ${escapeHtml(event.time)}</dd></div>
             <div><dt>地域</dt><dd>${escapeHtml(event.place)}</dd></div>
             <div><dt>定員</dt><dd>${escapeHtml(event.capacity)}</dd></div>
-            <div><dt>主催</dt><dd>${escapeHtml(event.host)}</dd></div>
+            <div><dt>主催</dt><dd>${host ? `<a class="text-link" href="#/groups/${host.id}">${escapeHtml(host.displayName)}</a>` : escapeHtml(event.host)}</dd></div>
             <div><dt>持ち物</dt><dd>${escapeHtml(event.belongings)}</dd></div>
           </dl>
           <p>${escapeHtml(event.description)}</p>
@@ -262,6 +287,51 @@ const renderEventDetail = (id) => {
           <button class="button button-primary" type="button">参加予定に入れる（デモ）</button>
         </div>
       </article>
+    `,
+  });
+};
+
+const renderGroupDetail = (id) => {
+  const group = groupById(id);
+  if (!group) return renderNotFound("団体が見つかりません", "#/members");
+
+  const groupEvents = eventsByGroup(id);
+
+  return pageFrame({
+    eyebrow: "Group / Activity",
+    title: group.displayName,
+    copy: "地域で活動している団体・活動者の紹介ページです。直接の連絡先や畑の正確な場所は表示しません。つながりはイベント参加から始まります。",
+    actions: backLink("#/members", "仲間一覧へ戻る"),
+    body: `
+      <article class="detail-card">
+        <div class="detail-visual ${group.photo}" aria-hidden="true"></div>
+        <div class="detail-body">
+          <span class="privacy-note">団体・活動者</span>
+          <p>${escapeHtml(group.area)}｜${escapeHtml(group.status)}</p>
+          <div class="tag-row">${renderTags(group.methods)}</div>
+          <h2>活動の様子</h2>
+          <p>${escapeHtml(group.note)}</p>
+          <p><strong>活動:</strong> ${escapeHtml(group.activity)}</p>
+          <h2>公式リンク</h2>
+          ${officialLinks(group.links) || "<p>公式リンクは未登録です。</p>"}
+          <p class="form-help">公式リンクは団体自身が管理ページで登録したものです。第三者が勝手に登録することはできません。</p>
+        </div>
+      </article>
+
+      <section class="section-block">
+        <div class="section-heading compact-heading">
+          <span class="section-number">${svgIcon("calendar")}</span>
+          <div>
+            <p class="eyebrow">Group Events</p>
+            <h2>この団体のイベント</h2>
+          </div>
+        </div>
+        ${
+          groupEvents.length
+            ? `<div class="card-grid event-grid">${groupEvents.map((event) => eventCard(event)).join("")}</div>`
+            : "<p>現在公開中のイベントはありません。</p>"
+        }
+      </section>
     `,
   });
 };
@@ -491,6 +561,7 @@ const renderNotFound = (message = "画面が見つかりません", href = "#/ho
 const routeTable = {
   home: () => renderHome(),
   members: () => renderMembers(),
+  groups: (parts) => renderGroupDetail(parts[1]),
   events: (parts) => (parts[1] ? renderEventDetail(parts[1]) : renderEvents()),
   learn: (parts) => (parts[1] ? renderMethodDetail(parts[1]) : renderLearn()),
   notes: (parts) => (parts[1] === "new" ? renderNoteForm() : renderNotes()),
@@ -506,6 +577,7 @@ const updateActiveNav = (rootRoute) => {
     const route = link.dataset.route;
     const isActive =
       route === rootRoute ||
+      (route === "members" && rootRoute === "groups") ||
       (route === "events" && rootRoute === "events") ||
       (route === "learn" && rootRoute === "learn") ||
       (route === "notes" && rootRoute === "notes") ||
