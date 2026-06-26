@@ -24,7 +24,7 @@ window.NOU_NO_SATO_DATA = {
     {
       id: "notes",
       path: "#/notes",
-      title: "畑ノートを記録する",
+      title: "栽培記録を残す",
       text: "作物の変化や学びを、自分だけの非公開記録として残します。",
       icon: "note",
     },
@@ -318,7 +318,7 @@ window.NOU_NO_SATO_DATA = {
     upcomingEvents: 2,
     favoriteMethod: "自然栽培",
     privacy: [
-      "畑ノートは基本非公開です。",
+      "栽培記録は基本非公開です。",
       "仲間探しでは市町村程度の地域だけを表示します。",
       "詳細住所や正確な畑の位置情報は扱いません。",
     ],

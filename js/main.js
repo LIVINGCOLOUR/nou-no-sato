@@ -53,7 +53,7 @@ const pageFrame = ({ eyebrow, title, copy, body, actions = "", tone = "" }) => `
     <header class="page-heading">
       <p class="eyebrow">${escapeHtml(eyebrow)}</p>
       <h1>${escapeHtml(title)}</h1>
-      <p>${escapeHtml(copy)}</p>
+      ${copy ? `<p>${escapeHtml(copy)}</p>` : ""}
       ${actions ? `<div class="page-actions">${actions}</div>` : ""}
     </header>
     ${body}
@@ -164,24 +164,22 @@ const renderHome = () =>
   pageFrame({
     eyebrow: "自然農・自然栽培・有機農法に関心のある人へ",
     title: "農の里",
-    copy: "地元で農を学び、出会い、記録する。自然な栽培に関心のある人のための小さな入口です。",
+    copy: "",
     tone: "home-view",
-    actions: `
-      <a class="button button-primary" href="#/members">仲間を探す</a>
-      <a class="button button-light" href="#/events">イベントを見る</a>
-      <a class="button button-ghost" href="#/notes/new">畑ノートを書く</a>
-    `,
     body: `
       <section class="hero-panel" aria-label="農の里の概要">
         <div class="hero-visual" aria-hidden="true">
-          <img class="hero-image" src="./assets/visuals/hero-satoyama.jpg" alt="" />
+          <picture>
+            <source media="(max-width: 640px)" srcset="./assets/visuals/hero-satoyama-mobile.jpg" />
+            <img class="hero-image" src="./assets/visuals/hero-satoyama.jpg" alt="" />
+          </picture>
         </div>
         <div class="hero-copy-panel">
           <h2>地元で農を学び、出会い、記録する。</h2>
           <p>自然農や有機農法に関心のある人が、近くの仲間やイベントとゆるくつながる場所。</p>
           <div class="hero-points">
             <span>市町村程度の地域表示</span>
-            <span>畑ノートは基本非公開</span>
+            <span>栽培記録は基本非公開</span>
             <span>農法比較は優劣なし</span>
           </div>
         </div>
@@ -197,52 +195,6 @@ const renderHome = () =>
         </div>
         ${routeCards()}
       </section>
-
-      <section class="section-block two-column">
-        <div>
-          <div class="section-heading compact-heading">
-            <span class="section-number">02</span>
-            <div>
-              <p class="eyebrow">Recent Events</p>
-              <h2>まず見たいイベント</h2>
-            </div>
-          </div>
-          <div class="stack-list">${events.slice(0, 2).map((event) => eventCard(event, true)).join("")}</div>
-        </div>
-        <div>
-          <div class="section-heading compact-heading">
-            <span class="section-number">03</span>
-            <div>
-              <p class="eyebrow">Private Notes</p>
-              <h2>最近の畑ノート</h2>
-            </div>
-          </div>
-          <div class="card-grid compact-grid">${notes.slice(0, 2).map(noteCard).join("")}</div>
-        </div>
-      </section>
-
-      <section class="section-block two-column">
-        <div>
-          <div class="section-heading compact-heading">
-            <span class="section-number">04</span>
-            <div>
-              <p class="eyebrow">Local Friends</p>
-              <h2>近くの仲間</h2>
-            </div>
-          </div>
-          <div class="stack-list">${friends.slice(0, 2).map(friendCard).join("")}</div>
-        </div>
-        <div>
-          <div class="section-heading compact-heading">
-            <span class="section-number">05</span>
-            <div>
-              <p class="eyebrow">Native Varieties</p>
-              <h2>在来種マップの入口</h2>
-            </div>
-          </div>
-          <div class="card-grid compact-grid">${seeds.slice(0, 2).map(seedCard).join("")}</div>
-        </div>
-      </section>
     `,
   });
 
@@ -250,7 +202,7 @@ const renderMembers = () =>
   pageFrame({
     eyebrow: "Local Friends",
     title: "仲間を探す",
-    copy: "市町村程度の地域と関心から、近くの実践者や初心者をゆるく見つけます。本名・詳細住所・畑の正確な場所は表示しません。",
+    copy: "地域で活動している団体やサークルを知り、イベント参加を通じてゆるくつながります。直接の連絡先や畑の正確な場所は表示しません。",
     actions: `
       ${backLink("#/home", "ホームへ戻る")}
       <a class="button button-light" href="#/events">イベントを見る</a>
@@ -370,7 +322,7 @@ const renderMethodDetail = (id) => {
 const renderNotes = () =>
   pageFrame({
     eyebrow: "Private Field Notes",
-    title: "畑ノート一覧",
+    title: "栽培記録",
     copy: "自分の観察を振り返るための画面です。Phase 1では基本非公開で、位置情報や詳細な畑住所は扱いません。",
     actions: `
       ${backLink("#/home", "ホームへ戻る")}
@@ -389,12 +341,12 @@ const renderNotes = () =>
 const renderNoteForm = () =>
   pageFrame({
     eyebrow: "Create Field Note",
-    title: "畑ノート作成・編集",
+    title: "栽培記録を書く",
     copy: "作物、日付、ひとことだけで残せる静的フォームです。保存処理やlocalStorage保存はありません。",
-    actions: backLink("#/notes", "畑ノート一覧へ戻る"),
+    actions: backLink("#/notes", "栽培記録へ戻る"),
     body: `
       <div class="note-layout">
-        <form class="note-form" aria-label="畑ノート入力イメージ">
+        <form class="note-form" aria-label="栽培記録入力イメージ">
           <label>
             作物
             <input type="text" value="ミニトマト" />
@@ -480,10 +432,10 @@ const renderMyPage = () =>
   pageFrame({
     eyebrow: "My Page",
     title: "マイページ",
-    copy: "SNS的な自己表現ではなく、自分の関心、参加予定、畑ノートを軽く振り返る画面です。",
+    copy: "SNS的な自己表現ではなく、自分の関心、参加予定、栽培記録を軽く振り返る画面です。",
     actions: `
       ${backLink("#/home", "ホームへ戻る")}
-      <a class="button button-light" href="#/notes">畑ノートを見る</a>
+      <a class="button button-light" href="#/notes">栽培記録を見る</a>
     `,
     body: `
       <section class="profile-panel">
@@ -496,7 +448,7 @@ const renderMyPage = () =>
           </div>
         </div>
         <dl class="stats-grid">
-          <div><dt>畑ノート</dt><dd>${profile.noteCount}件</dd></div>
+          <div><dt>栽培記録</dt><dd>${profile.noteCount}件</dd></div>
           <div><dt>参加予定</dt><dd>${profile.upcomingEvents}件</dd></div>
           <div><dt>お気に入り</dt><dd>${escapeHtml(profile.favoriteMethod)}</dd></div>
         </dl>
@@ -520,7 +472,7 @@ const renderMyPage = () =>
           <div class="stack-list">${events.slice(0, profile.upcomingEvents).map((event) => eventCard(event, true)).join("")}</div>
         </div>
         <div>
-          <h2>最近の畑ノート</h2>
+          <h2>最近の栽培記録</h2>
           <div class="card-grid compact-grid">${notes.slice(0, 2).map(noteCard).join("")}</div>
         </div>
       </section>
