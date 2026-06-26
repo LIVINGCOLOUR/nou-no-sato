@@ -84,14 +84,13 @@ const eventCard = (event, compact = false) => `
       <div class="event-date">${escapeHtml(event.date)}<small>${escapeHtml(event.day)}</small></div>
       <div>
         <h3>${escapeHtml(event.title)}</h3>
+        <p class="event-line">${escapeHtml(event.place)}｜${escapeHtml(event.time)}｜定員${escapeHtml(event.capacity)}</p>
         <p>${escapeHtml(event.description)}</p>
       </div>
     </div>
-    <div class="event-meta">
-      <span>日時：${escapeHtml(event.time)}</span>
-      <span>地域：${escapeHtml(event.place)}</span>
-      <span>定員：${escapeHtml(event.capacity)}</span>
-      <span>登録：運営登録イベント</span>
+    <div class="tag-row event-tags">
+      <span class="tag">${escapeHtml(event.type)}</span>
+      <span class="tag">運営登録</span>
     </div>
     <a class="card-action" href="#/events/${event.id}">詳細を見る</a>
   </article>
@@ -124,27 +123,25 @@ const methodCard = (method) => `
   <article class="method-card method-${method.color}">
     <h3>${escapeHtml(method.name)}</h3>
     <p>${escapeHtml(method.summary)}</p>
-    <ul class="method-list">
-      <li><strong>耕すか</strong>${escapeHtml(method.values.tilling)}</li>
-      <li><strong>肥料の考え方</strong>${escapeHtml(method.values.fertilizer)}</li>
-      <li><strong>草の扱い</strong>${escapeHtml(method.values.grass)}</li>
-      <li><strong>農薬の考え方</strong>${escapeHtml(method.values.pesticide)}</li>
-    </ul>
+    <p class="method-entry"><strong>入口:</strong> ${escapeHtml(method.entry)}</p>
     <a class="card-action" href="#/learn/${method.id}">詳しく見る</a>
   </article>
 `;
 
 const noteCard = (note) => `
   <article class="note-card">
-    <div class="note-photo ${note.photo}" aria-hidden="true"></div>
-    <h3>${escapeHtml(note.date)}｜${escapeHtml(note.crop)}</h3>
+    <div class="note-top">
+      <div class="note-photo ${note.photo}" aria-hidden="true"></div>
+      <div>
+        <h3>${escapeHtml(note.date)}｜${escapeHtml(note.crop)}</h3>
+        <p>${escapeHtml(note.memo)}</p>
+      </div>
+    </div>
     <div class="tag-row">
       <span class="tag">${escapeHtml(note.method)}</span>
       <span class="tag">非公開</span>
       <span class="tag">位置情報なし</span>
     </div>
-    <p>${escapeHtml(note.memo)}</p>
-    <p>学び：${escapeHtml(note.learning)}</p>
   </article>
 `;
 
@@ -158,7 +155,7 @@ const seedCard = (seed) => `
       </div>
     </div>
     <p>${escapeHtml(seed.note)}</p>
-    <span class="privacy-note">運営確認前提・詳細地点なし</span>
+    <span class="privacy-note">出典確認後に公開予定・詳細地点なし</span>
     <a class="card-action" href="#/native-varieties/${seed.id}">背景を見る</a>
   </article>
 `;
@@ -167,7 +164,7 @@ const renderHome = () =>
   pageFrame({
     eyebrow: "自然農・自然栽培・有機農法に関心のある人へ",
     title: "農の里",
-    copy: "地元の仲間、運営登録イベント、農法の学び、非公開の畑ノート、在来種マップへつながる静的プロトタイプです。",
+    copy: "地元で農を学び、出会い、記録する。自然な栽培に関心のある人のための小さな入口です。",
     tone: "home-view",
     actions: `
       <a class="button button-primary" href="#/members">仲間を探す</a>
@@ -180,8 +177,8 @@ const renderHome = () =>
           <img class="hero-image" src="./assets/visuals/hero-satoyama.jpg" alt="" />
         </div>
         <div class="hero-copy-panel">
-          <h2>小さくつながり、学び、記録する。</h2>
-          <p>相談アプリではなく、地域の人とリアルな場につながるための導線確認用UIです。</p>
+          <h2>地元で農を学び、出会い、記録する。</h2>
+          <p>自然農や有機農法に関心のある人が、近くの仲間やイベントとゆるくつながる場所。</p>
           <div class="hero-points">
             <span>市町村程度の地域表示</span>
             <span>畑ノートは基本非公開</span>
@@ -195,7 +192,7 @@ const renderHome = () =>
           <span class="section-number">01</span>
           <div>
             <p class="eyebrow">Phase 1 Core</p>
-            <h2 id="route-title">主要導線</h2>
+            <h2 id="route-title">今日の入口</h2>
           </div>
         </div>
         ${routeCards()}
@@ -207,7 +204,7 @@ const renderHome = () =>
             <span class="section-number">02</span>
             <div>
               <p class="eyebrow">Recent Events</p>
-              <h2>直近イベント</h2>
+              <h2>まず見たいイベント</h2>
             </div>
           </div>
           <div class="stack-list">${events.slice(0, 2).map((event) => eventCard(event, true)).join("")}</div>
@@ -217,7 +214,7 @@ const renderHome = () =>
             <span class="section-number">03</span>
             <div>
               <p class="eyebrow">Private Notes</p>
-              <h2>畑ノートの一部</h2>
+              <h2>最近の畑ノート</h2>
             </div>
           </div>
           <div class="card-grid compact-grid">${notes.slice(0, 2).map(noteCard).join("")}</div>
@@ -230,7 +227,7 @@ const renderHome = () =>
             <span class="section-number">04</span>
             <div>
               <p class="eyebrow">Local Friends</p>
-              <h2>仲間の一部</h2>
+              <h2>近くの仲間</h2>
             </div>
           </div>
           <div class="stack-list">${friends.slice(0, 2).map(friendCard).join("")}</div>
@@ -252,8 +249,8 @@ const renderHome = () =>
 const renderMembers = () =>
   pageFrame({
     eyebrow: "Local Friends",
-    title: "仲間を探す一覧",
-    copy: "本名、詳細住所、畑の正確な場所は出さず、市町村程度の地域と関心ごとで探します。プロフィール詳細はカード展開で代替します。",
+    title: "仲間を探す",
+    copy: "市町村程度の地域と関心から、近くの実践者や初心者をゆるく見つけます。本名・詳細住所・畑の正確な場所は表示しません。",
     actions: `
       ${backLink("#/home", "ホームへ戻る")}
       <a class="button button-light" href="#/events">イベントを見る</a>
@@ -289,17 +286,18 @@ const renderEventDetail = (id) => {
   return pageFrame({
     eyebrow: "Event Detail",
     title: event.title,
-    copy: "参加判断に必要な情報を確認する静的詳細画面です。参加ボタンは見た目だけで、登録処理はありません。",
+    copy: "参加前に雰囲気と基本情報を確認する静的詳細画面です。実際の登録処理はありません。",
     actions: `
       ${backLink("#/events", "イベント一覧へ戻る")}
       <a class="button button-light" href="#/mypage">マイページへ</a>
     `,
     tone: "warm-view",
     body: `
-      <article class="detail-card">
+      <article class="detail-card event-detail">
         <div class="detail-visual ${event.photo}" aria-hidden="true"></div>
         <div class="detail-body">
           <span class="privacy-note">運営登録イベント</span>
+          <h2>開催情報</h2>
           <dl class="detail-list">
             <div><dt>日時</dt><dd>${escapeHtml(event.date)}(${escapeHtml(event.day)}) ${escapeHtml(event.time)}</dd></div>
             <div><dt>地域</dt><dd>${escapeHtml(event.place)}</dd></div>
@@ -309,7 +307,7 @@ const renderEventDetail = (id) => {
           </dl>
           <p>${escapeHtml(event.description)}</p>
           <p class="form-help">${escapeHtml(event.note)}</p>
-          <button class="button button-primary" type="button">参加する（ダミー）</button>
+          <button class="button button-primary" type="button">参加予定に入れる（デモ）</button>
         </div>
       </article>
     `,
@@ -319,12 +317,12 @@ const renderEventDetail = (id) => {
 const renderLearn = () =>
   pageFrame({
     eyebrow: "Learn Farming Styles",
-    title: "農法を学ぶ一覧",
-    copy: "どれが優れているかではなく、考え方、条件、続けやすさの違いとして眺めます。",
+    title: "農法を学ぶ",
+    copy: "まずは農法ごとの雰囲気と試しやすい入口をつかみます。比較軸は詳細画面で確認します。",
     actions: backLink("#/home", "ホームへ戻る"),
     body: `
       <p class="method-note">
-        比較は優劣づけではありません。畑の広さ、土の状態、地域の気候、続けやすさによって選び方が変わる前提です。
+        比較は優劣づけではありません。畑の広さ、土の状態、地域の気候、続けやすさによって選び方が変わります。
       </p>
       <div class="method-board">${methods.map(methodCard).join("")}</div>
     `,
@@ -346,14 +344,14 @@ const renderMethodDetail = (id) => {
       <article class="detail-card method-detail method-${method.color}">
         <div class="detail-body">
           <span class="privacy-note">優劣ではなく違いとして理解</span>
-          <h2>基本の考え方</h2>
+          <h2>ひとことで言うと</h2>
           <p>${escapeHtml(method.summary)}</p>
+          <h2>大切にする考え方</h2>
+          <p>${escapeHtml(method.perspective)}</p>
           <h2>試しやすい入口</h2>
           <p>${escapeHtml(method.entry)}</p>
           <h2>注意点</h2>
           <p>${escapeHtml(method.caution)}</p>
-          <h2>見る視点</h2>
-          <p>${escapeHtml(method.perspective)}</p>
         </div>
         <aside class="side-panel">
           <h3>比較軸</h3>
@@ -392,32 +390,32 @@ const renderNoteForm = () =>
   pageFrame({
     eyebrow: "Create Field Note",
     title: "畑ノート作成・編集",
-    copy: "入力体験を確認するための静的フォームです。保存処理やlocalStorage保存はありません。",
+    copy: "作物、日付、ひとことだけで残せる静的フォームです。保存処理やlocalStorage保存はありません。",
     actions: backLink("#/notes", "畑ノート一覧へ戻る"),
     body: `
       <div class="note-layout">
         <form class="note-form" aria-label="畑ノート入力イメージ">
           <label>
-            日付
-            <input type="date" value="2026-06-21" />
-          </label>
-          <label>
             作物
             <input type="text" value="ミニトマト" />
           </label>
           <label>
-            写真
-            <span class="fake-upload">写真を選ぶ見た目だけ</span>
+            日付
+            <input type="date" value="2026-06-21" />
           </label>
           <label>
-            メモ
-            <textarea rows="5">葉が少し黄色い。水やりの間隔を見直す。</textarea>
+            ひとこと
+            <textarea rows="4">葉が少し黄色い。水やりの間隔を見直す。</textarea>
+          </label>
+          <label>
+            写真を追加（任意）
+            <span class="fake-upload">写真を選ぶ見た目だけ</span>
           </label>
           <label class="toggle-line">
             <input type="checkbox" checked disabled />
             公開設定：非公開
           </label>
-          <p class="form-help">位置情報や詳細な畑住所は扱いません。保存ボタンはプロトタイプ用の見た目です。</p>
+          <p class="form-help">この記録は自分だけに表示されます。正確な位置情報や詳細な畑住所は保存しません。</p>
           <button class="button button-primary" type="button">保存する（ダミー）</button>
         </form>
         <aside class="side-panel">
@@ -437,7 +435,7 @@ const renderNativeMap = () =>
   pageFrame({
     eyebrow: "Local Seed Map",
     title: "在来種マップ",
-    copy: "本格地図ではなく、地域と在来種・固定種の関係を知るための地図風UIです。正確な採種場所や個人宅は表示しません。",
+    copy: "地域ごとの在来種・固定種を、詳細地点ではなく地域単位で見ます。正確な採種場所や個人宅は表示しません。",
     actions: backLink("#/home", "ホームへ戻る"),
     body: `
       <div class="seed-map">
@@ -456,13 +454,13 @@ const renderSeedDetail = (id) => {
   return pageFrame({
     eyebrow: "Native Variety Detail",
     title: seed.name,
-    copy: "地域と作物の背景を知るための静的詳細です。正確な地点や個人宅は表示しません。",
+    copy: "地域と作物の背景を知るための静的詳細です。情報源を確認したうえで公開し、正確な地点や個人宅は表示しません。",
     actions: backLink("#/native-map", "在来種マップへ戻る"),
     body: `
       <article class="detail-card">
         <div class="detail-visual ${seed.photo}" aria-hidden="true"></div>
         <div class="detail-body">
-          <span class="privacy-note">運営確認前提・詳細地点なし</span>
+          <span class="privacy-note">出典確認後に公開予定・詳細地点なし</span>
           <dl class="detail-list">
             <div><dt>地域</dt><dd>${escapeHtml(seed.area)}</dd></div>
             <div><dt>作物分類</dt><dd>${escapeHtml(seed.category)}</dd></div>
@@ -573,7 +571,8 @@ const renderApp = () => {
   app.innerHTML = view;
   updateActiveNav(rootRoute);
   setPageTitle(app.querySelector("h1")?.textContent ?? "");
-  window.scrollTo({ top: 0, behavior: "instant" });
+  window.scrollTo(0, 0);
+  requestAnimationFrame(() => window.scrollTo(0, 0));
   app.focus({ preventScroll: true });
 };
 
