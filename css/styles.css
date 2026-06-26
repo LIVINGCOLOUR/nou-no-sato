@@ -802,6 +802,45 @@ textarea {
   text-decoration: underline;
 }
 
+.note-form .field {
+  display: grid;
+  gap: 6px;
+}
+
+.note-form .field-label {
+  color: var(--green-800);
+  font-size: 0.88rem;
+  font-weight: 900;
+}
+
+.note-form .static-field {
+  border: 1px dashed rgba(46, 125, 50, 0.3);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  color: var(--muted);
+  background: rgba(237, 246, 231, 0.5);
+  font-weight: 700;
+}
+
+.choice-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.choice-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(46, 125, 50, 0.16);
+  border-radius: 999px;
+  padding: 6px 12px;
+  color: var(--ink);
+  background: rgba(255, 253, 247, 0.92);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
 .method-note,
 .form-help {
   max-width: 840px;
@@ -956,6 +995,7 @@ textarea {
 
 .note-form input,
 .note-form textarea,
+.note-form select,
 .fake-upload {
   width: 100%;
   border: 1px solid rgba(46, 125, 50, 0.16);

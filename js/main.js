@@ -238,6 +238,7 @@ const renderMembers = () =>
         <span class="chip">菌ちゃん農法</span>
       </div>
       <div class="card-grid">${friends.map(friendCard).join("")}</div>
+      <p class="form-help">団体・活動者の方へ：<a class="text-link" href="#/manage">団体プロフィールやイベントを登録（団体向け管理）</a></p>
     `,
   });
 
@@ -301,7 +302,11 @@ const renderGroupDetail = (id) => {
     eyebrow: "Group / Activity",
     title: group.displayName,
     copy: "地域で活動している団体・活動者の紹介ページです。直接の連絡先や畑の正確な場所は表示しません。つながりはイベント参加から始まります。",
-    actions: backLink("#/members", "仲間一覧へ戻る"),
+    actions: `
+      ${backLink("#/members", "仲間一覧へ戻る")}
+      <a class="button button-light" href="#/manage/group">情報を編集（団体向け）</a>
+      <a class="button button-ghost" href="#/manage/event">イベントを登録（団体向け）</a>
+    `,
     body: `
       <article class="detail-card">
         <div class="detail-visual ${group.photo}" aria-hidden="true"></div>
@@ -558,6 +563,180 @@ const renderNotFound = (message = "画面が見つかりません", href = "#/ho
     body: routeCards(),
   });
 
+const renderManageHome = () =>
+  pageFrame({
+    eyebrow: "団体向け管理（デモ）",
+    title: "団体メニュー",
+    copy: "承認された団体・活動者が、自分たちのプロフィールとイベントを登録・編集する画面です。Phase 1ではダミーの静的フォームで、ログインや保存処理はありません。",
+    actions: backLink("#/members", "仲間一覧へ戻る"),
+    body: `
+      <div class="route-grid">
+        <a class="route-card" href="#/manage/group">
+          <span class="route-icon">${svgIcon("users")}</span>
+          <span>
+            <h3>団体プロフィールを登録・編集</h3>
+            <p>「仲間を探す」に表示される団体情報と公式リンクを管理します。</p>
+          </span>
+        </a>
+        <a class="route-card" href="#/manage/event">
+          <span class="route-icon">${svgIcon("calendar")}</span>
+          <span>
+            <h3>イベントを登録</h3>
+            <p>観察会や勉強会などのイベントを新しく登録します。</p>
+          </span>
+        </a>
+      </div>
+      <p class="form-help">実際の運用では、団体登録は運営の審査・承認を経たアカウントだけが利用できます。第三者が他団体の情報を登録・編集することはできません。</p>
+    `,
+  });
+
+const renderManageGroup = () =>
+  pageFrame({
+    eyebrow: "団体向け管理（デモ）",
+    title: "団体プロフィール登録・編集",
+    copy: "「仲間を探す」に表示される団体情報を登録・編集する静的フォームです。保存処理はありません。",
+    actions: backLink("#/manage", "団体メニューへ戻る"),
+    body: `
+      <div class="note-layout">
+        <form class="note-form" aria-label="団体プロフィール入力イメージ">
+          <label>
+            団体・活動者名
+            <input type="text" value="小さな畝の会" />
+          </label>
+          <label>
+            活動地域（市町村程度）
+            <input type="text" value="笠間市" />
+          </label>
+          <div class="field">
+            <span class="field-label">主な農法</span>
+            <span class="choice-row">
+              <label><input type="checkbox" checked /> 自然農</label>
+              <label><input type="checkbox" /> 自然栽培</label>
+              <label><input type="checkbox" /> 有機農法</label>
+              <label><input type="checkbox" /> 菌ちゃん農法</label>
+            </span>
+          </div>
+          <label>
+            ひとこと・関心
+            <input type="text" value="自然農に興味あり / 家庭菜園1年目" />
+          </label>
+          <label>
+            活動の紹介
+            <textarea rows="3">小さな畝で葉物から始めています。草を全部抜かず、様子を見ながら続けています。</textarea>
+          </label>
+          <label>
+            活動内容
+            <input type="text" value="月1回の観察会を開催" />
+          </label>
+          <label>
+            公式サイトURL（任意）
+            <input type="url" value="https://example.com/konaune-no-kai" />
+          </label>
+          <label>
+            Instagram（任意）
+            <input type="url" value="https://example.com/ig/konaune" />
+          </label>
+          <label>
+            その他公式SNS（任意）
+            <input type="url" value="" placeholder="https://" />
+          </label>
+          <label>
+            ロゴ・写真（任意）
+            <span class="fake-upload">画像を選ぶ見た目だけ</span>
+          </label>
+          <p class="form-help">公開されるのは市町村程度の地域までです。詳細住所・個人の連絡先は登録・表示しません。</p>
+          <button class="button button-primary" type="button">保存する（ダミー）</button>
+        </form>
+        <aside class="side-panel">
+          <h3>登録の方針</h3>
+          <p>公式リンクは団体自身が登録します。第三者が勝手に登録することはできません。</p>
+          <p>団体アカウントは運営の審査・承認を経て発行されます。</p>
+          <div class="tag-row">
+            <span class="tag">団体が登録</span>
+            <span class="tag">運営審査</span>
+            <span class="tag">市町村程度</span>
+          </div>
+        </aside>
+      </div>
+    `,
+  });
+
+const renderManageEventForm = () =>
+  pageFrame({
+    eyebrow: "団体向け管理（デモ）",
+    title: "イベント登録",
+    copy: "団体が新しいイベントを登録する静的フォームです。保存処理はありません。実際の登録は承認済み団体のみ可能です。",
+    actions: backLink("#/manage", "団体メニューへ戻る"),
+    body: `
+      <div class="note-layout">
+        <form class="note-form" aria-label="イベント登録入力イメージ">
+          <div class="field">
+            <span class="field-label">開催団体</span>
+            <span class="static-field">小さな畝の会（ログイン中の団体）</span>
+          </div>
+          <label>
+            イベント名
+            <input type="text" value="里山の草取りと観察会" />
+          </label>
+          <label>
+            種別
+            <select>
+              <option>観察会</option>
+              <option>勉強会</option>
+              <option>見学会</option>
+              <option>交流会</option>
+              <option>ワークショップ</option>
+            </select>
+          </label>
+          <label>
+            日付
+            <input type="date" value="2026-06-28" />
+          </label>
+          <label>
+            時間
+            <input type="text" value="10:00 - 12:00" />
+          </label>
+          <label>
+            開催地域（市町村程度）
+            <input type="text" value="笠間市周辺" />
+          </label>
+          <label>
+            定員
+            <input type="text" value="8名" />
+          </label>
+          <label>
+            持ち物
+            <input type="text" value="帽子、飲み物、汚れてもよい靴" />
+          </label>
+          <label>
+            紹介文
+            <textarea rows="3">畑まわりの草を観察し、残す草と刈る草の考え方を学びます。</textarea>
+          </label>
+          <label>
+            補足・注意（任意）
+            <textarea rows="2">詳細住所は参加確定後に運営から案内する想定です。</textarea>
+          </label>
+          <label>
+            写真（任意）
+            <span class="fake-upload">画像を選ぶ見た目だけ</span>
+          </label>
+          <p class="form-help">詳細住所や正確な開催地点は、参加確定後に案内する想定です。販売・出品の場ではありません。</p>
+          <button class="button button-primary" type="button">登録する（ダミー）</button>
+        </form>
+        <aside class="side-panel">
+          <h3>登録の注意</h3>
+          <p>イベントは運営確認のうえ公開される想定です。</p>
+          <p>誰でも自由に作成できる仕様ではなく、承認済み団体のみ登録できます。</p>
+          <div class="tag-row">
+            <span class="tag">承認済み団体のみ</span>
+            <span class="tag">運営確認</span>
+            <span class="tag">位置情報は段階公開</span>
+          </div>
+        </aside>
+      </div>
+    `,
+  });
+
 const routeTable = {
   home: () => renderHome(),
   members: () => renderMembers(),
@@ -568,6 +747,11 @@ const routeTable = {
   "native-map": () => renderNativeMap(),
   "native-varieties": (parts) => renderSeedDetail(parts[1]),
   mypage: () => renderMyPage(),
+  manage: (parts) => {
+    if (parts[1] === "group") return renderManageGroup();
+    if (parts[1] === "event") return renderManageEventForm();
+    return renderManageHome();
+  },
 };
 
 const rootRouteFor = (parts) => parts[0] ?? "home";
