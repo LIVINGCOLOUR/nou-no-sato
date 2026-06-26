@@ -158,6 +158,7 @@ textarea {
 
 .app-shell {
   min-height: calc(100vh - 72px);
+  min-height: calc(100dvh - 72px);
   outline: none;
 }
 
