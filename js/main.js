@@ -173,23 +173,26 @@ const sectionHeading = (icon, eyebrow, title, copy = "") => `
   </div>
 `;
 
-const routeCards = () => `
-  <div class="route-grid">
-    ${routes
-      .map(
-        (route) => `
-          <a class="route-card" href="${route.path}">
-            <span class="route-icon">${svgIcon(route.icon)}</span>
-            <span>
-              <h3>${escapeHtml(route.title)}</h3>
-              <p>${escapeHtml(route.text)}</p>
-            </span>
-          </a>
-        `,
-      )
-      .join("")}
-  </div>
-`;
+const routeCards = (ids) => {
+  const list = ids ? routes.filter((route) => ids.includes(route.id)) : routes;
+  return `
+    <div class="route-grid">
+      ${list
+        .map(
+          (route) => `
+            <a class="route-card" href="${route.path}">
+              <span class="route-icon">${svgIcon(route.icon)}</span>
+              <span>
+                <h3>${escapeHtml(route.title)}</h3>
+                <p>${escapeHtml(route.text)}</p>
+              </span>
+            </a>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+};
 
 const onboardingSection = () => `
   <section class="section-block">
@@ -413,8 +416,8 @@ const renderHome = () =>
       ${onboardingSection()}
 
       <section class="section-block">
-        ${sectionHeading("users", "Explore", "できること", "気になるところから、ゆっくり覗いてください。")}
-        ${routeCards()}
+        ${sectionHeading("note", "More", "ほかにできること", "記録や在来種マップも、いつでもどうぞ。")}
+        ${routeCards(["notes", "native-map"])}
       </section>
     `,
   });
