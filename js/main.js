@@ -353,6 +353,23 @@ const renderLearn = () =>
         比較は優劣づけではありません。畑の広さ、土の状態、地域の気候、続けやすさによって選び方が変わります。
       </p>
       <div class="method-board">${methods.map(methodCard).join("")}</div>
+
+      <section class="section-block">
+        <div class="section-heading compact-heading">
+          <span class="section-number">${svgIcon("map")}</span>
+          <div>
+            <p class="eyebrow">Native Varieties</p>
+            <h2>在来種・固定種を知る</h2>
+          </div>
+        </div>
+        <a class="route-card" href="#/native-map">
+          <span class="route-icon">${svgIcon("map")}</span>
+          <span>
+            <h3>在来種マップを見る</h3>
+            <p>茨城県に伝わる在来種・固定種を、地図と出典つきで地域ごとに知る。</p>
+          </span>
+        </a>
+      </section>
     `,
   });
 
@@ -772,10 +789,7 @@ const updateActiveNav = (rootRoute) => {
     const isActive =
       route === rootRoute ||
       (route === "members" && rootRoute === "groups") ||
-      (route === "events" && rootRoute === "events") ||
-      (route === "learn" && rootRoute === "learn") ||
-      (route === "notes" && rootRoute === "notes") ||
-      (route === "native-map" && rootRoute === "native-varieties");
+      (route === "learn" && (rootRoute === "native-map" || rootRoute === "native-varieties"));
 
     link.classList.toggle("is-active", isActive);
   });
