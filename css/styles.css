@@ -158,7 +158,7 @@ textarea {
 
 .app-shell {
   min-height: calc(100vh - 72px);
-  min-height: calc(100dvh - 72px);
+  min-height: calc(100svh - 72px);
   outline: none;
 }
 
@@ -1052,10 +1052,14 @@ textarea {
   z-index: 0;
   height: 440px;
   overflow: hidden;
-  border: 1px solid rgba(46, 125, 50, 0.16);
-  border-radius: var(--radius);
-  background: var(--mist);
+  border: 1px solid rgba(46, 125, 50, 0.1);
+  border-radius: var(--radius-large);
+  background: #eef4e6;
   box-shadow: var(--soft-shadow);
+}
+
+.map-canvas .leaflet-tile-pane {
+  filter: saturate(0.86) brightness(1.04) contrast(0.92) sepia(0.12);
 }
 
 .map-loading {

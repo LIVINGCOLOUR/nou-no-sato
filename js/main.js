@@ -216,14 +216,7 @@ const renderHome = () =>
         </div>
       </section>
 
-      <section class="section-block" aria-labelledby="route-title">
-        <div class="section-heading">
-          <span class="section-number">01</span>
-          <div>
-            <p class="eyebrow">Phase 1 Core</p>
-            <h2 id="route-title">今日の入口</h2>
-          </div>
-        </div>
+      <section class="section-block">
         ${routeCards()}
       </section>
     `,
