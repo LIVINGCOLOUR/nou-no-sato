@@ -1041,6 +1041,102 @@ textarea {
   align-items: stretch;
 }
 
+.map-area {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.map-canvas {
+  position: relative;
+  z-index: 0;
+  height: 440px;
+  overflow: hidden;
+  border: 1px solid rgba(46, 125, 50, 0.16);
+  border-radius: var(--radius);
+  background: var(--mist);
+  box-shadow: var(--soft-shadow);
+}
+
+.map-loading {
+  display: grid;
+  height: 100%;
+  margin: 0;
+  place-items: center;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(33, 50, 35, 0.2);
+}
+
+.dot-source {
+  background: #2e7d32;
+}
+
+.dot-research {
+  background: #f59a23;
+}
+
+.map-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.seed-card .seed-meta {
+  margin-top: 2px;
+  color: var(--green-800);
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.badge-source {
+  color: #1f5e23;
+  background: #e4efd9;
+}
+
+.badge-research {
+  color: #8a5a12;
+  background: #fdeccb;
+}
+
+.leaflet-popup-content a {
+  color: var(--green-700);
+  font-weight: 900;
+  text-decoration: underline;
+}
+
 .map-panel {
   position: relative;
   min-height: 360px;
@@ -1565,6 +1661,10 @@ textarea {
 
   .map-panel {
     min-height: 280px;
+  }
+
+  .map-canvas {
+    height: 320px;
   }
 
   .detail-list,

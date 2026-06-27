@@ -168,18 +168,26 @@ const noteCard = (note) => `
   </article>
 `;
 
+const sourceBadge = (seed) =>
+  seed.sourceType === "research_needed"
+    ? `<span class="source-badge badge-research">${escapeHtml(seed.sourceLabel)}</span>`
+    : `<span class="source-badge badge-source">${escapeHtml(seed.sourceLabel)}</span>`;
+
 const seedCard = (seed) => `
   <article class="seed-card">
     <div class="seed-top">
       <div class="seed-photo ${seed.photo}" aria-hidden="true"></div>
       <div>
-        <h3>${escapeHtml(seed.area)}</h3>
-        <p>${escapeHtml(seed.name)}</p>
+        <h3>${escapeHtml(seed.name)}</h3>
+        <p class="seed-meta">${escapeHtml(seed.cropType)}｜${escapeHtml(seed.area)}</p>
       </div>
     </div>
-    <p>${escapeHtml(seed.note)}</p>
-    <span class="privacy-note">出典確認後に公開予定・詳細地点なし</span>
-    <a class="card-action" href="#/native-varieties/${seed.id}">背景を見る</a>
+    <p>${escapeHtml(seed.descriptionShort)}</p>
+    <div class="tag-row">
+      ${sourceBadge(seed)}
+      <span class="tag">位置は地域の目安</span>
+    </div>
+    <a class="card-action" href="#/native-varieties/${seed.id}">背景・出典を見る</a>
   </article>
 `;
 
@@ -462,12 +470,19 @@ const renderNativeMap = () =>
   pageFrame({
     eyebrow: "Local Seed Map",
     title: "在来種マップ",
-    copy: "地域ごとの在来種・固定種を、詳細地点ではなく地域単位で見ます。正確な採種場所や個人宅は表示しません。",
+    copy: "茨城県に伝わる在来種・固定種を、地域単位の概略位置で表示します。正確な採種場所や個人宅は示しません。出典つきで少しずつ整理しています。",
     actions: backLink("#/home", "ホームへ戻る"),
     body: `
       <div class="seed-map">
-        <div class="map-panel" aria-label="地図風の在来種表示">
-          ${seeds.map((seed) => `<a class="map-pin ${seed.pin}" href="#/native-varieties/${seed.id}">${escapeHtml(seed.area)}</a>`).join("")}
+        <div class="map-area">
+          <div id="seed-map-canvas" class="map-canvas" aria-label="茨城県の在来種マップ">
+            <p class="map-loading">地図を読み込んでいます…</p>
+          </div>
+          <div class="map-legend">
+            <span class="legend-item"><span class="legend-dot dot-source"></span>公的DB・地域資料</span>
+            <span class="legend-item"><span class="legend-dot dot-research"></span>調査中・本人確認前</span>
+          </div>
+          <p class="map-note">背景地図：地理院タイル（国土地理院）。位置は地域の目安で、正確な圃場所在地ではありません。</p>
         </div>
         <div class="card-grid compact-grid">${seeds.map(seedCard).join("")}</div>
       </div>
@@ -481,22 +496,24 @@ const renderSeedDetail = (id) => {
   return pageFrame({
     eyebrow: "Native Variety Detail",
     title: seed.name,
-    copy: "地域と作物の背景を知るための静的詳細です。情報源を確認したうえで公開し、正確な地点や個人宅は表示しません。",
+    copy: "地域と作物の背景を知るための静的詳細です。出典を確認したうえで掲載し、正確な採種地点や個人宅は表示しません。",
     actions: backLink("#/native-map", "在来種マップへ戻る"),
     body: `
       <article class="detail-card">
         <div class="detail-visual ${seed.photo}" aria-hidden="true"></div>
         <div class="detail-body">
-          <span class="privacy-note">出典確認後に公開予定・詳細地点なし</span>
+          ${sourceBadge(seed)}
           <dl class="detail-list">
             <div><dt>地域</dt><dd>${escapeHtml(seed.area)}</dd></div>
-            <div><dt>作物分類</dt><dd>${escapeHtml(seed.category)}</dd></div>
-            <div><dt>情報源</dt><dd>${escapeHtml(seed.source)}</dd></div>
+            <div><dt>作物分類</dt><dd>${escapeHtml(seed.cropType)}</dd></div>
+            ${seed.aliases && seed.aliases.length ? `<div><dt>別名</dt><dd>${escapeHtml(seed.aliases.join("、"))}</dd></div>` : ""}
+            <div><dt>データ確度</dt><dd>${escapeHtml(seed.dataConfidence)}</dd></div>
           </dl>
           <h2>背景</h2>
-          <p>${escapeHtml(seed.story)}</p>
-          <h2>特徴</h2>
-          <ul class="check-list">${seed.traits.map((trait) => `<li>${escapeHtml(trait)}</li>`).join("")}</ul>
+          <p>${escapeHtml(seed.descriptionShort)}</p>
+          <h2>出典</h2>
+          <p>${seed.sourceUrl ? `<a class="text-link" href="${escapeHtml(seed.sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(seed.sourceName)} ↗</a>` : escapeHtml(seed.sourceName)}</p>
+          <p class="form-help">${escapeHtml(seed.locationNote)}</p>
         </div>
       </article>
     `,
@@ -771,6 +788,43 @@ const updateActiveNav = (rootRoute) => {
   });
 };
 
+let seedMap = null;
+const mountSeedMap = () => {
+  const el = document.querySelector("#seed-map-canvas");
+  if (!el || typeof L === "undefined") return;
+  if (seedMap) {
+    seedMap.remove();
+    seedMap = null;
+  }
+  el.innerHTML = "";
+  seedMap = L.map(el, { scrollWheelZoom: false }).setView([36.3, 140.3], 9);
+  L.tileLayer("https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png", {
+    attribution: "地理院タイル（国土地理院）",
+    maxZoom: 18,
+  }).addTo(seedMap);
+  const points = [];
+  seeds.forEach((seed) => {
+    if (typeof seed.lat !== "number" || typeof seed.lng !== "number") return;
+    const research = seed.sourceType === "research_needed";
+    L.circleMarker([seed.lat, seed.lng], {
+      radius: 9,
+      color: "#ffffff",
+      weight: 2,
+      fillColor: research ? "#f59a23" : "#2e7d32",
+      fillOpacity: 0.95,
+    })
+      .addTo(seedMap)
+      .bindPopup(
+        `<strong>${escapeHtml(seed.name)}</strong><br>${escapeHtml(seed.cropType)}｜${escapeHtml(seed.area)}<br><a href="#/native-varieties/${seed.id}">背景・出典を見る</a>`,
+      );
+    points.push([seed.lat, seed.lng]);
+  });
+  if (points.length) {
+    seedMap.fitBounds(points, { padding: [28, 28], maxZoom: 10 });
+  }
+  requestAnimationFrame(() => seedMap && seedMap.invalidateSize());
+};
+
 const renderApp = () => {
   const parts = getHashParts();
   const rootRoute = rootRouteFor(parts);
@@ -782,6 +836,13 @@ const renderApp = () => {
   window.scrollTo(0, 0);
   requestAnimationFrame(() => window.scrollTo(0, 0));
   app.focus({ preventScroll: true });
+
+  if (rootRoute === "native-map") {
+    requestAnimationFrame(mountSeedMap);
+  } else if (seedMap) {
+    seedMap.remove();
+    seedMap = null;
+  }
 };
 
 window.addEventListener("hashchange", renderApp);
