@@ -1849,6 +1849,44 @@ textarea {
   margin: 0 0 8px;
 }
 
+/* ホーム：方針を控えめに伝える細い帯 */
+.trust-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trust-strip li {
+  position: relative;
+  padding-left: 19px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.trust-strip li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--green-700);
+  font-weight: 900;
+}
+
+/* マイページ：サンプル表示であることの明示 */
+.sample-tag {
+  margin-left: 8px;
+  border-radius: 999px;
+  padding: 2px 8px;
+  color: #5f4c2f;
+  background: #fff2d8;
+  font-size: 0.68rem;
+  font-weight: 900;
+  vertical-align: middle;
+}
+
 @media (hover: hover) {
   .route-card,
   .friend-card,
@@ -1931,18 +1969,18 @@ textarea {
   }
 
   .page-heading {
-    padding-top: 10px;
-    padding-bottom: 16px;
+    padding-top: 8px;
+    padding-bottom: 12px;
   }
 
   .page-heading p:not(.eyebrow) {
     font-size: 0.9rem;
-    line-height: 1.68;
+    line-height: 1.6;
   }
 
   .page-heading h1 {
-    font-size: clamp(2.15rem, 10vw, 2.75rem);
-    line-height: 1.08;
+    font-size: clamp(1.75rem, 7.5vw, 2.15rem);
+    line-height: 1.12;
   }
 
   .page-actions {
@@ -1956,7 +1994,7 @@ textarea {
   }
 
   .hero-panel {
-    min-height: 500px;
+    min-height: 420px;
     border-radius: 0 0 22px 22px;
   }
 

@@ -46,7 +46,7 @@ const getHashParts = () => {
 };
 
 const setPageTitle = (title) => {
-  document.title = title ? `${title} | 農の里` : "農の里 | クリック可能Phase 1プロトタイプ";
+  document.title = title ? `${title} | 農の里` : "農の里";
 };
 
 const methodById = (id) => methods.find((method) => method.id === id);
@@ -370,13 +370,18 @@ const renderHome = () =>
         <div class="hero-copy-panel">
           <h2>地元で農を学び、出会い、記録する。</h2>
           <p>自然農や有機農法に関心のある人が、近くの仲間やイベントとゆるくつながる場所。ひとりの「やってみたい」から始められます。</p>
-          <div class="hero-points">
-            <span>市町村程度の地域表示</span>
-            <span>栽培記録は基本非公開</span>
-            <span>農法比較は優劣なし</span>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#/events">近くのイベントを見る</a>
+            <a class="button button-light" href="#/native-map">在来種マップを見る</a>
           </div>
         </div>
       </section>
+
+      <ul class="trust-strip" aria-label="このアプリの方針">
+        <li>市町村程度の地域表示</li>
+        <li>栽培記録は基本非公開</li>
+        <li>農法比較は優劣なし</li>
+      </ul>
 
       ${onboardingSection()}
 
@@ -399,11 +404,7 @@ const renderMembers = () => {
   return pageFrame({
     eyebrow: "Local Friends",
     title: "仲間を探す",
-    copy: "同じ地域・同じ関心の人が、近くで静かに育てています。まずは眺めるだけ、気になったら軽く一歩。直接の連絡先や畑の正確な場所は表示しません。",
-    actions: `
-      ${backLink("#/home", "ホームへ戻る")}
-      <a class="button button-light" href="#/events">イベントを見る</a>
-    `,
+    copy: "同じ地域・同じ関心の人を、ゆるく探せます。まずは眺めるだけでも大丈夫。",
     body: `
       <div class="peer-band">
         <div><strong>${peers.length}</strong><span>近くの個人</span></div>
@@ -435,11 +436,7 @@ const renderEvents = () => {
   return pageFrame({
     eyebrow: "Real Events",
     title: "イベント一覧",
-    copy: "運営登録イベントだけを一覧します。誰でもイベント作成できる導線はありません。まずは「気になる」で印をつけて、行くかは後で決められます。",
-    actions: `
-      ${backLink("#/home", "ホームへ戻る")}
-      <a class="button button-light" href="#/mypage">参加予定を見る</a>
-    `,
+    copy: "地域の団体が開く観察会や勉強会の予定です。「気になる」で印をつけて、行くかは後で決められます。",
     tone: "warm-view",
     body: `
       ${filterChips("eventType", eventTypeOptions)}
@@ -461,7 +458,7 @@ const renderEventDetail = (id) => {
   return pageFrame({
     eyebrow: "Event Detail",
     title: event.title,
-    copy: "参加前に雰囲気と基本情報を確認する静的詳細画面です。実際の登録処理はありません。",
+    copy: "参加前に、雰囲気と基本情報を確認できます。",
     actions: `
       ${backLink("#/events", "イベント一覧へ戻る")}
       ${host ? `<a class="button button-light" href="#/groups/${host.id}">開催団体を見る</a>` : ""}
@@ -555,8 +552,7 @@ const renderLearn = () =>
   pageFrame({
     eyebrow: "Learn Farming Styles",
     title: "農法を学ぶ",
-    copy: "まずは農法ごとの雰囲気と試しやすい入口をつかみます。比較軸は詳細画面で確認します。",
-    actions: backLink("#/home", "ホームへ戻る"),
+    copy: "農法ごとの雰囲気と、試しやすい入口をつかめます。",
     body: `
       <p class="method-note">
         比較は優劣づけではありません。畑の広さ、土の状態、地域の気候、続けやすさによって選び方が変わります。
@@ -619,17 +615,15 @@ const renderNotes = () =>
   pageFrame({
     eyebrow: "Private Field Notes",
     title: "栽培記録",
-    copy: "自分の観察を振り返るための画面です。Phase 1では基本非公開で、位置情報や詳細な畑住所は扱いません。",
-    actions: `
-      ${backLink("#/home", "ホームへ戻る")}
-      <a class="button button-primary" href="#/notes/new">新しく記録する</a>
-    `,
+    copy: "自分だけの非公開メモ。位置情報や畑の住所は扱いません。",
+    actions: `<a class="button button-primary" href="#/notes/new">新しく記録する</a>`,
     body: `
       <div class="trust-list">
         <div><strong>基本非公開</strong><span>公開タイムラインはありません。</span></div>
         <div><strong>位置情報なし</strong><span>畑住所や正確な地点は扱いません。</span></div>
         <div><strong>自分の学び</strong><span>共有よりも振り返りを優先します。</span></div>
       </div>
+      <p class="form-help">下のカードは記入例です。</p>
       <div class="card-grid compact-grid">${notes.map(noteCard).join("")}</div>
     `,
   });
@@ -638,7 +632,7 @@ const renderNoteForm = () =>
   pageFrame({
     eyebrow: "Create Field Note",
     title: "栽培記録を書く",
-    copy: "作物、日付、ひとことだけで残せる静的フォームです。保存処理やlocalStorage保存はありません。",
+    copy: "作物・日付・ひとことだけで残せます。（デモのため保存はされません）",
     actions: backLink("#/notes", "栽培記録へ戻る"),
     body: `
       <div class="note-layout">
@@ -774,7 +768,7 @@ const renderSeedDetail = (id) => {
   return pageFrame({
     eyebrow: "Native Variety Detail",
     title: seed.name,
-    copy: "地域と作物の背景を知るための静的詳細です。出典を確認したうえで掲載し、正確な採種地点や個人宅は表示しません。",
+    copy: "地域と作物の背景を知る画面です。出典を確認したうえで掲載し、正確な採種地点や個人宅は表示しません。",
     actions: backLink("#/native-map", "在来種マップへ戻る"),
     body: `
       <article class="detail-card">
@@ -830,17 +824,15 @@ const renderMyPage = () => {
   return pageFrame({
     eyebrow: "My Page",
     title: "マイページ",
-    copy: "SNS的な自己表現ではなく、自分の関心、気になっていること、栽培記録を軽く振り返る画面です。",
-    actions: `
-      ${backLink("#/home", "ホームへ戻る")}
-      <a class="button button-light" href="#/notes">栽培記録を見る</a>
-    `,
+    copy: "自分の関心や、気になっていることを軽く振り返る画面です。",
+    actions: backLink("#/home", "ホームへ戻る"),
     body: `
+      <p class="form-help">これはデモ用の表示です。実際は、あなた自身の関心・気になる・記録がここに表示されます。</p>
       <section class="profile-panel">
         <div class="profile-main">
           <div class="avatar-placeholder" aria-hidden="true"></div>
           <div>
-            <p class="profile-name">${escapeHtml(profile.displayName)}</p>
+            <p class="profile-name">${escapeHtml(profile.displayName)}<span class="sample-tag">サンプル</span></p>
             <p>${escapeHtml(profile.area)}｜${escapeHtml(profile.status)}</p>
             <div class="tag-row">${renderTags(profile.interests)}</div>
           </div>
