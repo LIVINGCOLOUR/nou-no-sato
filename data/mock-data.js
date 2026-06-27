@@ -37,6 +37,76 @@ window.NOU_NO_SATO_DATA = {
     },
   ],
 
+  // はじめての人向けの、最初の一歩を小さくする3ステップ導線
+  onboarding: [
+    {
+      step: "1",
+      title: "関心のある農法を選ぶ",
+      text: "自然農でも家庭菜園でも大丈夫。気になるものから眺めます。",
+      cta: "農法を見る",
+      path: "#/learn",
+    },
+    {
+      step: "2",
+      title: "近くの仲間を見てみる",
+      text: "同じ地域・同じ関心の人がどれくらいいるか、ゆるく確かめます。",
+      cta: "仲間を見る",
+      path: "#/members",
+    },
+    {
+      step: "3",
+      title: "気になるイベントに印をつける",
+      text: "申し込み前に「気になる」を押すだけ。行くかは後で決められます。",
+      cta: "イベントを見る",
+      path: "#/events",
+    },
+  ],
+
+  // 個人のピア（団体とは別）。本名や詳細住所は扱わず、ニックネームと市町村程度のみ。
+  peers: [
+    {
+      id: "u01",
+      nickname: "のうこ",
+      area: "茨城県央エリア",
+      status: "家庭菜園2年目",
+      methods: ["自然農", "菌ちゃん農法"],
+      oneLiner: "プランターから畝へ。失敗も記録して楽しんでいます。",
+      lookingFor: "近所でゆるく情報交換できる人",
+      photo: "photo-sprout",
+      isMe: true,
+    },
+    {
+      id: "u02",
+      nickname: "たねまき",
+      area: "笠間市",
+      status: "はじめたばかり",
+      methods: ["自然農"],
+      oneLiner: "草を抜きすぎないやり方に興味があります。まだ手探りです。",
+      lookingFor: "観察会に一緒に行ける初心者仲間",
+      photo: "photo-field",
+    },
+    {
+      id: "u03",
+      nickname: "つちのこ",
+      area: "石岡市",
+      status: "畑あり・3年目",
+      methods: ["有機農法", "在来種に関心"],
+      oneLiner: "堆肥づくりと地域の種を少しずつ。気軽に話しましょう。",
+      lookingFor: "種のことを話せる人",
+      photo: "photo-veggie",
+    },
+    {
+      id: "u04",
+      nickname: "みずほ",
+      area: "水戸市",
+      status: "プランター栽培",
+      methods: ["菌ちゃん農法"],
+      oneLiner: "ベランダで土づくりから挑戦中。小さく続けています。",
+      lookingFor: "同じくベランダ・庭先で育てている人",
+      photo: "photo-sprout",
+    },
+  ],
+
   friends: [
     {
       id: "m01",
@@ -48,6 +118,8 @@ window.NOU_NO_SATO_DATA = {
       note: "小さな畝で葉物から始めています。草を全部抜かず、様子を見ながら続けています。",
       activity: "月1回の観察会に参加中",
       joinHint: "近くの観察会からゆるく会えます。",
+      rhythm: "毎月 第4日曜・午前",
+      welcome: "はじめての方の見学・途中参加・見るだけ参加を歓迎しています。",
       eventId: "e01",
       photo: "photo-field",
       links: {
@@ -55,6 +127,18 @@ window.NOU_NO_SATO_DATA = {
         instagram: "https://example.com/ig/konaune",
         sns: "",
       },
+      updates: [
+        {
+          date: "6/20",
+          title: "梅雨の草の便り",
+          text: "雨続きで草の伸びが早いです。観察会では残す草と刈る草の見分けをやります。",
+        },
+        {
+          date: "6/5",
+          title: "畝づくりを始めました",
+          text: "葉物向けの小さな畝を新しく立てました。初心者の方は土いじりから一緒にどうぞ。",
+        },
+      ],
     },
     {
       id: "m02",
@@ -66,6 +150,8 @@ window.NOU_NO_SATO_DATA = {
       note: "地域の勉強会に参加しながら、堆肥や草の扱いを少しずつ試しています。",
       activity: "運営登録イベントの手伝い",
       joinHint: "イベント詳細から参加の雰囲気を確認できます。",
+      rhythm: "隔月 第1日曜・午後",
+      welcome: "種や土の話を、初心者にもわかる言葉で共有しています。",
       eventId: "e02",
       photo: "photo-community",
       links: {
@@ -73,6 +159,13 @@ window.NOU_NO_SATO_DATA = {
         instagram: "https://example.com/ig/yasato-tsuchi",
         sns: "",
       },
+      updates: [
+        {
+          date: "6/18",
+          title: "在来種の勉強会、参加受付中",
+          text: "地域に残る種の話を聞く会です。種を持っていない方の見学も歓迎です。",
+        },
+      ],
     },
     {
       id: "m03",
@@ -84,6 +177,8 @@ window.NOU_NO_SATO_DATA = {
       note: "土づくりを学びながら、庭先で小さく実験中です。",
       activity: "土づくりワークショップに参加予定",
       joinHint: "詳細住所や個人宅は表示しません。",
+      rhythm: "不定期・月1回ほど",
+      welcome: "ベランダや庭先だけでも参加できる、ゆるい集まりです。",
       eventId: "e05",
       photo: "photo-sprout",
       links: {
@@ -91,6 +186,13 @@ window.NOU_NO_SATO_DATA = {
         instagram: "https://example.com/ig/niwasaki-planter",
         sns: "",
       },
+      updates: [
+        {
+          date: "6/12",
+          title: "落ち葉を集めています",
+          text: "土づくりワークショップに向けて、落ち葉や枝葉を少しずつ集めています。",
+        },
+      ],
     },
   ],
 
@@ -109,7 +211,13 @@ window.NOU_NO_SATO_DATA = {
       type: "観察会",
       belongings: "帽子、飲み物、汚れてもよい靴",
       note: "詳細住所は参加確定後に運営から案内する想定です。",
+      welcome: "初参加・見学だけ・途中参加も歓迎です。手ぶらで大丈夫。",
       photo: "photo-field",
+      relatedSeedIds: [],
+      voices: [
+        { who: "40代・家庭菜園1年目", text: "草を全部抜かなくていいと知って気が楽になりました。" },
+        { who: "30代・プランター栽培", text: "初めてでも輪に入りやすい雰囲気でした。" },
+      ],
     },
     {
       id: "e02",
@@ -125,7 +233,12 @@ window.NOU_NO_SATO_DATA = {
       type: "勉強会",
       belongings: "筆記用具",
       note: "種の正確な採取地点や個人宅は表示しません。",
+      welcome: "種を持っていない方の見学も歓迎です。聞くだけ参加OK。",
       photo: "photo-veggie",
+      relatedSeedIds: ["kaiji-takana", "yasato-zairai-daizu"],
+      voices: [
+        { who: "50代・畑あり", text: "地域の種にこんな物語があるとは知りませんでした。" },
+      ],
     },
     {
       id: "e03",
@@ -141,7 +254,12 @@ window.NOU_NO_SATO_DATA = {
       type: "見学会",
       belongings: "帽子、長袖、飲み物",
       note: "見学先の詳細位置は公開ページには出しません。",
+      welcome: "質問はいつでもどうぞ。畑を見るだけでも学びになります。",
       photo: "photo-community",
+      relatedSeedIds: [],
+      voices: [
+        { who: "20代・はじめたばかり", text: "教科書と違う本物の畑を見られて納得感がありました。" },
+      ],
     },
     {
       id: "e04",
@@ -157,7 +275,12 @@ window.NOU_NO_SATO_DATA = {
       type: "交流会",
       belongings: "筆記用具、持ち帰り袋",
       note: "販売や自由な出品機能ではなく、学びの場として扱います。",
+      welcome: "ひとりでの参加が多い会です。気負わず来てください。",
       photo: "photo-map",
+      relatedSeedIds: ["kaiji-takana", "satokawa-kabocha", "tanokuro-mame"],
+      voices: [
+        { who: "30代・家庭菜園2年目", text: "種を持ち帰って育てる楽しみが増えました。" },
+      ],
     },
     {
       id: "e05",
@@ -173,7 +296,12 @@ window.NOU_NO_SATO_DATA = {
       type: "ワークショップ",
       belongings: "手袋、汚れてもよい服、飲み物",
       note: "参加ボタンはプロトタイプ用の見た目です。登録処理はありません。",
+      welcome: "ベランダ・庭先派も歓迎。道具は会で用意します。",
       photo: "photo-sprout",
+      relatedSeedIds: ["yasato-zairai-daizu"],
+      voices: [
+        { who: "40代・プランター栽培", text: "落ち葉が土になる過程を見られて感動しました。" },
+      ],
     },
   ],
 
@@ -307,6 +435,8 @@ window.NOU_NO_SATO_DATA = {
       dataConfidence: "地域資料をもとに作成・要確認",
       locationNote: "位置は城里町・水戸周辺の目安です。正確な圃場所在地ではありません。",
       photo: "photo-veggie",
+      relatedGroupId: "m03",
+      relatedEventIds: [],
     },
     {
       id: "ukishima-daikon",
@@ -324,6 +454,8 @@ window.NOU_NO_SATO_DATA = {
       dataConfidence: "地域資料をもとに作成・要確認",
       locationNote: "位置は浮島周辺の目安です。正確な圃場所在地ではありません。",
       photo: "photo-field",
+      relatedGroupId: "",
+      relatedEventIds: [],
     },
     {
       id: "kaiji-takana",
@@ -341,6 +473,8 @@ window.NOU_NO_SATO_DATA = {
       dataConfidence: "地域資料をもとに作成・要確認",
       locationNote: "位置は石岡市周辺の目安です。正確な圃場所在地ではありません。",
       photo: "photo-sprout",
+      relatedGroupId: "m02",
+      relatedEventIds: ["e02", "e04"],
     },
     {
       id: "satokawa-kabocha",
@@ -358,6 +492,8 @@ window.NOU_NO_SATO_DATA = {
       dataConfidence: "県資料をもとに作成・要確認",
       locationNote: "位置は里川町周辺の目安です。正確な圃場所在地ではありません。",
       photo: "photo-veggie",
+      relatedGroupId: "",
+      relatedEventIds: ["e04"],
     },
     {
       id: "goka-yatsugashira",
@@ -375,6 +511,8 @@ window.NOU_NO_SATO_DATA = {
       dataConfidence: "自治体公開情報をもとに作成・要確認",
       locationNote: "位置は五霞町周辺の目安です。正確な圃場所在地ではありません。",
       photo: "photo-field",
+      relatedGroupId: "",
+      relatedEventIds: [],
     },
     {
       id: "mito-mizura",
@@ -392,6 +530,8 @@ window.NOU_NO_SATO_DATA = {
       dataConfidence: "調査中・本人確認前",
       locationNote: "位置は水戸周辺の目安です。正確な圃場所在地ではありません。",
       photo: "photo-veggie",
+      relatedGroupId: "m03",
+      relatedEventIds: [],
     },
     {
       id: "musume-kita-azuki",
@@ -409,6 +549,8 @@ window.NOU_NO_SATO_DATA = {
       dataConfidence: "地域記事をもとに作成・要確認",
       locationNote: "位置は常陸太田市周辺の目安です。正確な圃場所在地ではありません。",
       photo: "photo-map",
+      relatedGroupId: "",
+      relatedEventIds: [],
     },
     {
       id: "yasato-zairai-daizu",
@@ -426,6 +568,8 @@ window.NOU_NO_SATO_DATA = {
       dataConfidence: "調査中・本人確認前",
       locationNote: "位置は石岡市八郷周辺の目安です。正確な圃場所在地ではありません。",
       photo: "photo-field",
+      relatedGroupId: "m02",
+      relatedEventIds: ["e02", "e05"],
     },
     {
       id: "tanokuro-mame",
@@ -443,6 +587,8 @@ window.NOU_NO_SATO_DATA = {
       dataConfidence: "地域資料をもとに作成・要確認",
       locationNote: "位置は県央・県南周辺の目安です。正確な圃場所在地ではありません。",
       photo: "photo-map",
+      relatedGroupId: "",
+      relatedEventIds: ["e04"],
     },
   ],
 
