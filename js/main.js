@@ -3,13 +3,40 @@ const { events, friends, methods, notes, profile, routes, seeds, peers, onboardi
 
 const app = document.querySelector("#app");
 
-// セッション内だけ保持する軽い操作状態（永続化・バックエンドなし）。
+// 軽い操作状態。気になる/受け取る/つながるはブラウザに保存して再訪でも残す。
+// フィルタはセッション内のみ。記録・プロフィール・フォーム入力は保存しない。
 const ui = {
   interested: new Set(), // 気になるイベント
   following: new Set(), // 活動を受け取る団体
   connect: new Set(), // ゆるくつながりたい個人
   memberMethod: "all", // 仲間ページの農法フィルタ
   eventType: "all", // イベントページの種別フィルタ
+};
+
+const STORE_KEY = "nounosato:ui";
+const PERSISTED = ["interested", "following", "connect"];
+
+const loadUi = () => {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORE_KEY) || "{}");
+    PERSISTED.forEach((key) => {
+      if (Array.isArray(raw[key])) ui[key] = new Set(raw[key]);
+    });
+  } catch (_) {
+    // 保存が読めなくても初期状態で続行する。
+  }
+};
+
+const saveUi = () => {
+  try {
+    const payload = {};
+    PERSISTED.forEach((key) => {
+      payload[key] = [...ui[key]];
+    });
+    localStorage.setItem(STORE_KEY, JSON.stringify(payload));
+  } catch (_) {
+    // 保存できない環境（プライベートモード等）でも操作は継続する。
+  }
 };
 
 const iconPaths = {
@@ -552,15 +579,10 @@ const renderLearn = () =>
   pageFrame({
     eyebrow: "Learn Farming Styles",
     title: "農法を学ぶ",
-    copy: "農法ごとの雰囲気と、試しやすい入口をつかめます。",
+    copy: "農法ごとの雰囲気と、地域の在来種を、気軽に眺められます。",
     body: `
-      <p class="method-note">
-        比較は優劣づけではありません。畑の広さ、土の状態、地域の気候、続けやすさによって選び方が変わります。
-      </p>
-      <div class="method-board">${methods.map(methodCard).join("")}</div>
-
-      <section class="section-block">
-        ${sectionHeading("map", "Native Varieties", "在来種・固定種を知る")}
+      <section class="section-block learn-lead">
+        ${sectionHeading("map", "Native Varieties", "在来種・固定種を知る", "地図で地域ごとの在来種を、出典つきで気軽に眺められます。")}
         <a class="route-card" href="#/native-map">
           <span class="route-icon">${svgIcon("map")}</span>
           <span>
@@ -568,6 +590,11 @@ const renderLearn = () =>
             <p>茨城県に伝わる在来種・固定種を、地図と出典つきで地域ごとに知る。</p>
           </span>
         </a>
+      </section>
+
+      <section class="section-block">
+        ${sectionHeading("book", "Farming Styles", "農法ごとに知る", "比較は優劣づけではありません。畑の条件や続けやすさで選び方が変わります。")}
+        <div class="method-board">${methods.map(methodCard).join("")}</div>
       </section>
     `,
   });
@@ -1179,6 +1206,7 @@ app.addEventListener("click", (event) => {
     if (icon) icon.textContent = willOn ? "✓" : "＋";
     const label = toggle.querySelector(".pill-toggle-label");
     if (label) label.textContent = willOn ? toggle.dataset.on : toggle.dataset.off;
+    saveUi();
     return;
   }
 
@@ -1193,6 +1221,8 @@ app.addEventListener("click", (event) => {
 
 window.addEventListener("hashchange", renderApp);
 window.addEventListener("DOMContentLoaded", () => {
+  loadUi();
+
   if (!window.location.hash) {
     window.location.replace("#/home");
     return;
