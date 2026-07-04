@@ -1917,6 +1917,47 @@ textarea {
   padding-top: 10px;
 }
 
+/* イベント詳細：説明を上部に、人気・料金・気になる数など */
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.tag-popular {
+  color: #8a4b12;
+  border: 1px solid rgba(219, 116, 23, 0.4);
+  background: linear-gradient(180deg, #ffe1b0, #ffd28a);
+}
+
+.event-detail .event-lead {
+  margin: 12px 0 0;
+  color: var(--ink);
+  font-size: 1.04rem;
+  font-weight: 800;
+  line-height: 1.6;
+}
+
+.event-detail .interested-count {
+  margin: 10px 0 0;
+  color: var(--orange-dark);
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.corner-action {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.event-detail .corner-action .card-action {
+  width: auto;
+  min-width: 168px;
+  margin-top: 0;
+}
+
 @media (hover: hover) {
   .route-card,
   .friend-card,
@@ -2085,6 +2126,11 @@ textarea {
 
   .contribute-cta .button {
     width: 100%;
+  }
+
+  .event-detail .corner-action .card-action {
+    width: 100%;
+    min-width: 0;
   }
 
   /* チップは折り返さず横スクロールにして見切れを防ぐ */

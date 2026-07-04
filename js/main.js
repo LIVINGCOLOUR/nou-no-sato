@@ -8,13 +8,13 @@ const app = document.querySelector("#app");
 const ui = {
   interested: new Set(), // 気になるイベント
   following: new Set(), // 活動を受け取る団体
-  connect: new Set(), // ゆるくつながりたい個人
+  invited: new Set(), // イベントに誘った個人
   memberMethod: "all", // 仲間ページの農法フィルタ
   eventType: "all", // イベントページの種別フィルタ
 };
 
 const STORE_KEY = "nounosato:ui";
-const PERSISTED = ["interested", "following", "connect"];
+const PERSISTED = ["interested", "following", "invited"];
 
 const loadUi = () => {
   try {
@@ -82,6 +82,14 @@ const seedById = (id) => seeds.find((seed) => seed.id === id);
 const groupById = (id) => friends.find((group) => group.id === id);
 const eventsByGroup = (id) => events.filter((event) => event.hostGroupId === id);
 const seedsByGroup = (id) => seeds.filter((seed) => seed.relatedGroupId === id);
+
+const capacityNum = (event) => parseInt(event.capacity, 10) || 0;
+const isPopular = (event) => {
+  const cap = capacityNum(event);
+  return (cap > 0 && event.attending / cap >= 0.7) || (event.interestedCount || 0) >= 12;
+};
+// 表示上の「気になる」人数（他の人の数＋自分が押していれば+1）。
+const interestedTotal = (event) => (event.interestedCount || 0) + (ui.interested.has(event.id) ? 1 : 0);
 
 const renderTags = (items) => items.map((item) => `<span class="tag">${escapeHtml(item)}</span>`).join("");
 
@@ -196,7 +204,7 @@ const routeCards = (ids) => {
 
 const onboardingSection = () => `
   <section class="section-block">
-    ${sectionHeading("book", "First Step", "はじめての方へ", "3つの小さなステップから。いきなり申し込まなくて大丈夫です。")}
+    ${sectionHeading("book", "First Step", "はじめての方へ", "3つの小さなステップから。")}
     <ol class="onboard-grid">
       ${onboarding
         .map(
@@ -226,6 +234,7 @@ const eventCard = (event, compact = false) => `
       </div>
     </div>
     <div class="tag-row event-tags">
+      ${isPopular(event) ? `<span class="tag tag-popular">人気</span>` : ""}
       <span class="tag">${escapeHtml(event.type)}</span>
       <span class="tag">運営登録</span>
     </div>
@@ -256,7 +265,7 @@ const peerCard = (peer) => `
     ${
       peer.isMe
         ? `<a class="card-action" href="#/mypage">自分のページを見る</a>`
-        : actionButton({ kind: "connect", id: peer.id, on: "つながり希望ずみ", off: "ゆるくつながる" })
+        : actionButton({ kind: "invited", id: peer.id, on: "イベントに誘いました", off: "イベントに誘う" })
     }
     <span class="privacy-note">ニックネーム・市町村程度のみ</span>
   </article>
@@ -385,7 +394,7 @@ const relatedSeedsBlock = (ids, heading = "この会に関わる在来種") => {
 
 const renderHome = () =>
   pageFrame({
-    eyebrow: "自然農・自然栽培・有機農法に関心のある人へ",
+    eyebrow: "自然農・有機で家庭菜園をしている人へ",
     title: "農の里",
     copy: "",
     tone: "home-view",
@@ -398,8 +407,8 @@ const renderHome = () =>
           </picture>
         </div>
         <div class="hero-copy-panel">
-          <h2>地元で農を学び、出会い、記録する。</h2>
-          <p>自然農や有機農法に関心のある人が、近くの仲間やイベントとゆるくつながる場所。ひとりの「やってみたい」から始められます。</p>
+          <h2>自然農・家庭菜園の仲間と、地元でつながる。</h2>
+          <p>自然農や有機で家庭菜園をする人が、近くの仲間やイベントとゆるくつながる場所。売り買いではなく、地元の横のつながりを育てます。</p>
           <div class="hero-actions">
             <a class="button button-primary" href="#/events">近くのイベントを見る</a>
             <a class="button button-light" href="#/native-map">在来種マップを見る</a>
@@ -447,6 +456,7 @@ const renderMembers = () => {
       <section class="section-block">
         ${sectionHeading("users", "Individuals", "近くの個人", "同じくらいの段階の人と、ゆるく知り合えます。")}
         ${peerList.length ? `<div class="card-grid">${peerList.map(peerCard).join("")}</div>` : emptyNote("個人")}
+        <p class="form-help">気になった人は、まずイベントに誘ってみましょう。より深くやりとりするための連絡先の交換は、イベントで直接会ったときに個人どうしでどうぞ。</p>
       </section>
 
       <section class="section-block">
@@ -489,32 +499,36 @@ const renderEventDetail = (id) => {
     eyebrow: "Event Detail",
     title: event.title,
     copy: "参加前に、雰囲気と基本情報を確認できます。",
-    actions: `
-      ${backLink("#/events", "イベント一覧へ戻る")}
-      ${host ? `<a class="button button-light" href="#/groups/${host.id}">開催団体を見る</a>` : ""}
-    `,
+    actions: backLink("#/events", "イベント一覧へ戻る"),
     tone: "warm-view",
     body: `
       <article class="detail-card event-detail">
         <div class="detail-visual ${event.photo}" aria-hidden="true"></div>
         <div class="detail-body">
-          <span class="privacy-note">運営登録イベント</span>
+          <div class="badge-row">
+            <span class="privacy-note">運営登録イベント</span>
+            ${isPopular(event) ? `<span class="tag tag-popular">人気</span>` : ""}
+          </div>
+          <p class="event-lead">${escapeHtml(event.description)}</p>
           ${event.welcome ? `<p class="welcome-banner">${escapeHtml(event.welcome)}</p>` : ""}
           <h2>開催情報</h2>
           <dl class="detail-list">
             <div><dt>日時</dt><dd>${escapeHtml(event.date)}(${escapeHtml(event.day)}) ${escapeHtml(event.time)}</dd></div>
-            <div><dt>地域</dt><dd>${escapeHtml(event.place)}</dd></div>
-            <div><dt>定員</dt><dd>${escapeHtml(event.capacity)}</dd></div>
-            <div><dt>主催</dt><dd>${host ? `<a class="text-link" href="#/groups/${host.id}">${escapeHtml(host.displayName)}</a>` : escapeHtml(event.host)}</dd></div>
+            <div><dt>地域</dt><dd>${escapeHtml(event.place)}${event.areaNote ? `（${escapeHtml(event.areaNote)}）` : ""}</dd></div>
+            <div><dt>定員</dt><dd>${escapeHtml(event.capacity)}（参加予定 ${escapeHtml(String(event.attending ?? 0))}名）</dd></div>
+            <div><dt>料金</dt><dd>${escapeHtml(event.fee || "無料")}</dd></div>
+            <div><dt>申込締切</dt><dd>${escapeHtml(event.deadline || "-")}</dd></div>
+            <div><dt>主催</dt><dd>${escapeHtml(host ? host.displayName : event.host)}</dd></div>
             <div><dt>持ち物</dt><dd>${escapeHtml(event.belongings)}</dd></div>
           </dl>
-          <p>${escapeHtml(event.description)}</p>
-          <p class="form-help">${escapeHtml(event.note)}</p>
+          ${event.note ? `<p class="form-help">${escapeHtml(event.note)}</p>` : ""}
           <div class="action-row">
             ${actionButton({ kind: "interested", id: event.id, on: "気になるに追加ずみ", off: "気になる" })}
             <button class="button button-primary" type="button">参加予定に入れる（デモ）</button>
           </div>
+          <p class="interested-count" data-interested-count="${event.id}" data-base="${event.interestedCount || 0}">${interestedTotal(event)}人が「気になる」を押しています</p>
           <p class="form-help">まずは「気になる」だけでOK。参加するかは後から決められます。</p>
+          ${host ? `<div class="corner-action"><a class="card-action" href="#/groups/${host.id}">開催団体を見る</a></div>` : ""}
         </div>
       </article>
 
@@ -1209,6 +1223,12 @@ app.addEventListener("click", (event) => {
     if (icon) icon.textContent = willOn ? "✓" : "＋";
     const label = toggle.querySelector(".pill-toggle-label");
     if (label) label.textContent = willOn ? toggle.dataset.on : toggle.dataset.off;
+    if (kind === "interested") {
+      document.querySelectorAll(`[data-interested-count="${id}"]`).forEach((el) => {
+        const base = Number(el.dataset.base) || 0;
+        el.textContent = `${base + (willOn ? 1 : 0)}人が「気になる」を押しています`;
+      });
+    }
     saveUi();
     return;
   }
