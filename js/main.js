@@ -13,6 +13,7 @@ const ui = {
   memberMethod: "all", // 仲間ページの農法フィルタ
   memberArea: "all", // 仲間ページの地域フィルタ
   eventType: "all", // イベントページの種別フィルタ
+  eventArea: "all", // イベントページの地域フィルタ
 };
 
 const STORE_KEY = "nounosato:ui";
@@ -226,6 +227,11 @@ const areaFilterOptions = [
   })),
 ];
 
+const eventAreaOptions = [
+  { value: "all", label: "すべての地域" },
+  ...[...new Set(events.map((event) => event.place))].map((place) => ({ value: place, label: place })),
+];
+
 const officialLinks = (links) => {
   if (!links) return "";
   const items = [
@@ -318,7 +324,7 @@ const eventCard = (event, compact = false) => {
       <div class="event-date">${escapeHtml(event.date)}<small>${escapeHtml(event.day)}</small></div>
       <div>
         <h3>${escapeHtml(event.title)}</h3>
-        <p class="event-line">${escapeHtml(event.place)}｜${escapeHtml(event.time)}｜定員${escapeHtml(event.capacity)}</p>
+        <p class="event-line">${escapeHtml(event.place)}｜${escapeHtml(event.time)}｜定員${escapeHtml(event.capacity)}｜${escapeHtml(event.fee || "無料")}</p>
         <p>${escapeHtml(event.description)}</p>
         <p class="event-host">主催：${escapeHtml(event.host)}</p>
       </div>
@@ -586,7 +592,10 @@ const renderMembers = () => {
 
 const renderEvents = () => {
   const type = ui.eventType;
-  const list = events.filter((event) => type === "all" || event.type === type);
+  const area = ui.eventArea;
+  const list = events.filter(
+    (event) => (type === "all" || event.type === type) && (area === "all" || event.place === area),
+  );
 
   const byDate = (a, b) => (parseEventDate(a.date) ?? 0) - (parseEventDate(b.date) ?? 0);
   const upcoming = list.filter((event) => eventStatus(event) !== "past").sort(byDate);
@@ -607,7 +616,10 @@ const renderEvents = () => {
     copy: "地域の団体が開く観察会や勉強会の予定です。「気になる」で印をつけて、行くかは後で決められます。",
     tone: "warm-view",
     body: `
-      ${filterChips("eventType", eventTypeOptions)}
+      <div class="filter-stack">
+        <div class="filter-row"><span class="filter-label">種別</span>${filterChips("eventType", eventTypeOptions)}</div>
+        <div class="filter-row"><span class="filter-label">地域</span>${filterChips("eventArea", eventAreaOptions)}</div>
+      </div>
       ${
         upcoming.length
           ? monthGroups
@@ -620,7 +632,7 @@ const renderEvents = () => {
                 `,
               )
               .join("")
-          : `<p class="empty-note">この種別の募集中イベントは今ありません。「すべて」に戻して見てください。</p>`
+          : `<p class="empty-note">この条件の募集中イベントは今ありません。種別や地域の絞り込みを変えてみてください。</p>`
       }
       ${
         past.length
@@ -702,7 +714,12 @@ const renderGroupDetail = (id) => {
   const group = groupById(id);
   if (!group) return renderNotFound("団体が見つかりません", "#/members");
 
-  const groupEvents = eventsByGroup(id);
+  const byDate = (a, b) => (parseEventDate(a.date) ?? 0) - (parseEventDate(b.date) ?? 0);
+  const allGroupEvents = eventsByGroup(id);
+  const groupEvents = [
+    ...allGroupEvents.filter((event) => eventStatus(event) !== "past").sort(byDate),
+    ...allGroupEvents.filter((event) => eventStatus(event) === "past").sort(byDate).reverse(),
+  ];
   const groupSeeds = seedsByGroup(id);
 
   return pageFrame({
@@ -794,9 +811,9 @@ const methodCompareTable = () => `
 
 const renderLearn = () =>
   pageFrame({
-    eyebrow: "Learn Farming Styles",
-    title: "農法を学ぶ",
-    copy: "農法ごとの雰囲気と、地域の在来種を、気軽に眺められます。",
+    eyebrow: "Learn",
+    title: "学ぶ",
+    copy: "在来種・農法・技法を、気軽に眺められます。",
     body: `
       <section class="section-block learn-lead">
         ${sectionHeading("map", "Native Varieties", "在来種・固定種を知る", "地図で地域ごとの在来種を、出典つきで気軽に眺められます。")}
@@ -993,8 +1010,19 @@ const renderNoteForm = () =>
             <input type="date" value="2026-06-21" />
           </label>
           <label>
+            農法（任意）
+            <select>
+              ${methods.map((method) => `<option${method.name === "自然農" ? " selected" : ""}>${escapeHtml(method.name)}</option>`).join("")}
+              <option>その他・決めていない</option>
+            </select>
+          </label>
+          <label>
             ひとこと
             <textarea rows="4">葉が少し黄色い。水やりの間隔を見直す。</textarea>
+          </label>
+          <label>
+            うまくいったこと・学び（任意）
+            <textarea rows="2">草マルチを厚くした畝は乾きにくい。</textarea>
           </label>
           <label>
             写真を追加（任意）
@@ -1201,6 +1229,7 @@ const renderMyPage = () => {
           <div><dt>参加予定</dt><dd>${ui.joined.size}件</dd></div>
           <div><dt>気になる</dt><dd>${ui.interested.size}件</dd></div>
           <div><dt>受け取り中</dt><dd>${ui.following.size}団体</dd></div>
+          <div><dt>誘っている人</dt><dd>${ui.invited.size}人</dd></div>
         </dl>
       </section>
 
@@ -1334,6 +1363,15 @@ const renderManageGroup = () =>
             活動リズム
             <input type="text" value="毎月 第4日曜・午前" />
           </label>
+          <label>
+            歓迎メッセージ（任意）
+            <input type="text" value="はじめての方の見学・途中参加・見るだけ参加を歓迎しています。" />
+          </label>
+          <label>
+            季節の便りを届ける（任意）
+            <textarea rows="3" placeholder="例：雨続きで草の伸びが早いです。観察会では残す草と刈る草の見分けをやります。"></textarea>
+          </label>
+          <p class="form-help">便りは「活動を受け取る」を押した人に一方向で届く読み取り専用のお知らせです。返信・コメント機能はありません。</p>
           <label>
             公式サイトURL（任意）
             <input type="url" value="https://example.com/konaune-no-kai" />
@@ -1493,6 +1531,8 @@ const updateActiveNav = (rootRoute) => {
       (route === "learn" && (rootRoute === "native-map" || rootRoute === "native-varieties" || rootRoute === "techniques"));
 
     link.classList.toggle("is-active", isActive);
+    if (isActive) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
   });
 };
 
