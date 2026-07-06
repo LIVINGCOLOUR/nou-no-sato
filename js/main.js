@@ -74,7 +74,7 @@ const getHashParts = () => {
 };
 
 const setPageTitle = (title) => {
-  document.title = title ? `${title} | 農の里` : "農の里";
+  document.title = title ? `${title} | 農の里（仮称）` : "農の里（仮称）";
 };
 
 const methodById = (id) => methods.find((method) => method.id === id);
@@ -466,7 +466,7 @@ const relatedSeedsBlock = (ids, heading = "この会に関わる在来種") => {
 const renderHome = () =>
   pageFrame({
     eyebrow: "自然に寄り添う農業に関心がある人へ",
-    title: "農の里",
+    title: "農の里（仮称）",
     copy: "",
     tone: "home-view",
     body: `
