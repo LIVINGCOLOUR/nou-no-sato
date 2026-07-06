@@ -465,7 +465,7 @@ const relatedSeedsBlock = (ids, heading = "この会に関わる在来種") => {
 
 const renderHome = () =>
   pageFrame({
-    eyebrow: "自然農・有機で家庭菜園をしている人へ",
+    eyebrow: "自然に寄り添う農業に関心がある人へ",
     title: "農の里",
     copy: "",
     tone: "home-view",
