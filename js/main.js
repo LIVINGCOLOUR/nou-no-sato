@@ -11,6 +11,7 @@ const ui = {
   following: new Set(), // 活動を受け取る団体
   invited: new Set(), // イベントに誘った個人
   memberMethod: "all", // 仲間ページの農法フィルタ
+  memberArea: "all", // 仲間ページの地域フィルタ
   eventType: "all", // イベントページの種別フィルタ
 };
 
@@ -157,6 +158,19 @@ const eventMonthLabel = (event) => {
   return date ? `${date.getMonth() + 1}月` : "日程調整中";
 };
 
+const upcomingEvents = () =>
+  events
+    .filter((event) => eventStatus(event) !== "past")
+    .sort((a, b) => (parseEventDate(a.date) ?? 0) - (parseEventDate(b.date) ?? 0));
+
+// 「イベントに誘う」の誘い先を具体的にするため、その人の地域で近く開かれるイベントを提案する。
+const suggestEventFor = (peer) => {
+  const list = upcomingEvents();
+  return list.find((event) => peer.area && event.place.includes(peer.area)) || list[0] || null;
+};
+
+const nextEventOf = (groupId) => upcomingEvents().find((event) => event.hostGroupId === groupId) || null;
+
 const renderTags = (items) => items.map((item) => `<span class="tag">${escapeHtml(item)}</span>`).join("");
 
 const backLink = (href, label = "戻る") => `<a class="back-link" href="${href}">${label}</a>`;
@@ -202,6 +216,14 @@ const methodFilterOptions = [
 const eventTypeOptions = [
   { value: "all", label: "すべて" },
   ...[...new Set(events.map((event) => event.type))].map((type) => ({ value: type, label: type })),
+];
+
+const areaFilterOptions = [
+  { value: "all", label: "すべての地域" },
+  ...[...new Set([...peers.filter((peer) => !peer.isMe), ...friends].map((item) => item.area))].map((area) => ({
+    value: area,
+    label: area,
+  })),
 ];
 
 const officialLinks = (links) => {
@@ -321,7 +343,11 @@ const eventCard = (event, compact = false) => {
 `;
 };
 
-const peerCard = (peer) => `
+const peerCard = (peer) => {
+  const me = peers.find((item) => item.isMe);
+  const shared = !peer.isMe && me ? (peer.methods || []).filter((m) => (me.methods || []).includes(m)) : [];
+  const suggestion = peer.isMe ? null : suggestEventFor(peer);
+  return `
   <article class="peer-card">
     <div class="peer-top">
       <span class="peer-photo ${peer.photo}" aria-hidden="true"></span>
@@ -332,7 +358,13 @@ const peerCard = (peer) => `
     </div>
     <p class="peer-line">${escapeHtml(peer.oneLiner)}</p>
     <div class="tag-row">${renderTags(peer.methods)}</div>
+    ${shared.length ? `<p class="peer-common">あなたと同じ関心：${shared.map(escapeHtml).join("・")}</p>` : ""}
     <p class="peer-looking"><span>さがしている：</span>${escapeHtml(peer.lookingFor)}</p>
+    ${
+      suggestion
+        ? `<p class="peer-suggest"><span>一緒に行けそうなイベント：</span><a href="#/events/${suggestion.id}">${escapeHtml(suggestion.date)}(${escapeHtml(suggestion.day)}) ${escapeHtml(suggestion.title)}</a></p>`
+        : ""
+    }
     ${
       peer.isMe
         ? `<a class="card-action" href="#/mypage">自分のページを見る</a>`
@@ -341,6 +373,7 @@ const peerCard = (peer) => `
     <span class="privacy-note">ニックネーム・市町村程度のみ</span>
   </article>
 `;
+};
 
 const friendCard = (friend) => `
   <article class="friend-card">
@@ -358,6 +391,12 @@ const friendCard = (friend) => `
         <p>${escapeHtml(friend.note)}</p>
         <p class="rhythm-line"><strong>活動リズム：</strong>${escapeHtml(friend.rhythm)}</p>
         ${friend.welcome ? `<p class="welcome-line">${escapeHtml(friend.welcome)}</p>` : ""}
+        ${(() => {
+          const nextEvent = nextEventOf(friend.id);
+          return nextEvent
+            ? `<p class="next-event-line"><strong>次のイベント：</strong><a href="#/events/${nextEvent.id}">${escapeHtml(nextEvent.date)}(${escapeHtml(nextEvent.day)}) ${escapeHtml(nextEvent.title)}</a>${statusBadge(nextEvent)}</p>`
+            : "";
+        })()}
         ${officialLinks(friend.links)}
         <div class="action-row">
           ${actionButton({ kind: "following", id: friend.id, on: "活動を受け取り中", off: "活動を受け取る" })}
@@ -503,12 +542,15 @@ const renderHome = () =>
 
 const renderMembers = () => {
   const method = ui.memberMethod;
-  const matchMethod = (item) => method === "all" || (item.methods || []).includes(method);
-  const peerList = peers.filter(matchMethod);
-  const groupList = friends.filter(matchMethod);
+  const area = ui.memberArea;
+  const matchItem = (item) =>
+    (method === "all" || (item.methods || []).includes(method)) &&
+    (area === "all" || item.area === area);
+  const peerList = peers.filter(matchItem);
+  const groupList = friends.filter(matchItem);
 
   const emptyNote = (label) =>
-    `<p class="empty-note">「${escapeHtml(method)}」に当てはまる${label}はまだ少ないようです。別の関心でも探してみてください。</p>`;
+    `<p class="empty-note">この条件に当てはまる${label}はまだ少ないようです。関心や地域を変えて探してみてください。</p>`;
 
   return pageFrame({
     eyebrow: "Local Friends",
@@ -521,7 +563,10 @@ const renderMembers = () => {
         <p class="peer-band-note">ニックネームと市町村程度だけを表示します。本名・詳細住所・畑の正確な位置は出しません。</p>
       </div>
 
-      ${filterChips("memberMethod", methodFilterOptions)}
+      <div class="filter-stack">
+        <div class="filter-row"><span class="filter-label">関心</span>${filterChips("memberMethod", methodFilterOptions)}</div>
+        <div class="filter-row"><span class="filter-label">地域</span>${filterChips("memberArea", areaFilterOptions)}</div>
+      </div>
 
       <section class="section-block">
         ${sectionHeading("users", "Individuals", "近くの個人", "同じくらいの段階の人と、ゆるく知り合えます。")}
@@ -1134,6 +1179,7 @@ const renderMyPage = () => {
     .filter((event) => ui.joined.has(event.id))
     .sort((a, b) => (parseEventDate(a.date) ?? 0) - (parseEventDate(b.date) ?? 0));
   const followingGroups = friends.filter((group) => ui.following.has(group.id));
+  const invitedPeers = peers.filter((peer) => ui.invited.has(peer.id));
 
   return pageFrame({
     eyebrow: "My Page",
@@ -1172,6 +1218,15 @@ const renderMyPage = () => {
           ? `<section class="section-block">
               ${sectionHeading("users", "Following", "活動を受け取っている団体")}
               <div class="tag-row">${followingGroups.map((group) => `<a class="official-link" href="#/groups/${group.id}">${escapeHtml(group.displayName)}</a>`).join("")}</div>
+            </section>`
+          : ""
+      }
+
+      ${
+        invitedPeers.length
+          ? `<section class="section-block">
+              ${sectionHeading("users", "Invited", "イベントに誘っている人", "連絡先の交換は、イベントで直接会ったときに個人どうしでどうぞ。")}
+              <div class="tag-row">${invitedPeers.map((peer) => `<span class="tag">${escapeHtml(peer.nickname)}（${escapeHtml(peer.area)}）</span>`).join("")}</div>
             </section>`
           : ""
       }

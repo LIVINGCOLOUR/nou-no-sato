@@ -2512,3 +2512,71 @@ textarea {
     height: 18px;
   }
 }
+
+.filter-stack {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 18px;
+}
+
+.filter-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.filter-row .filter-label {
+  flex: 0 0 auto;
+  color: var(--green-800);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.filter-row .toolbar {
+  margin: 0 0 8px;
+}
+
+.peer-common {
+  margin: 0;
+  border-radius: 8px;
+  padding: 5px 9px;
+  color: #1f5e23;
+  background: rgba(228, 239, 217, 0.75);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.peer-suggest {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.peer-suggest span {
+  color: var(--green-800);
+  font-weight: 900;
+}
+
+.peer-suggest a {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.next-event-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 0;
+  font-size: 0.88rem;
+}
+
+.next-event-line a {
+  color: var(--green-800);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

@@ -121,7 +121,7 @@
   <table>
     <tr><th>文書名</th><td>農の里（仮称）基本仕様書</td></tr>
     <tr><th>名称の扱い</th><td>「農の里」は仮称。正式名称は検討中（改称時はUI・文書の名称を一括更新する）。</td></tr>
-    <tr><th>版数</th><td>1.4（イベントの作りこみ：参加予定トグル・開催ステータス・月別グルーピング・当日の流れ／雨天時を反映）</td></tr>
+    <tr><th>版数</th><td>1.5（仲間ページの作りこみ：地域フィルタ・共通の関心・イベント提案・団体の次のイベント表示を反映）</td></tr>
     <tr><th>作成日</th><td>2026年7月6日</td></tr>
     <tr><th>対象バージョン</th><td>main ブランチ（2026年7月6日 時点）</td></tr>
     <tr><th>リポジトリ</th><td>github.com/LIVINGCOLOUR/nou-no-sato</td></tr>
@@ -185,7 +185,7 @@
 <table class="spec">
   <tr><th>ルート</th><th>画面</th><th>主な内容</th></tr>
   <tr><td><code>#/home</code></td><td>ホーム</td><td>対象ユーザー明示のヒーロー（テーマ：自然に寄り添う農法に関心がある仲間と、地元でつながる。）、CTA2つ（イベント／在来種マップ）、方針の信頼帯、はじめての方へ（3ステップ）、ほかにできること（記録・マップ）。</td></tr>
-  <tr><td><code>#/members</code></td><td>仲間を探す</td><td>匿名サマリー帯（個人数・団体数）、農法フィルタ、近くの個人（peers）、地域の団体・サークル（friends）。</td></tr>
+  <tr><td><code>#/members</code></td><td>仲間を探す</td><td>匿名サマリー帯（個人数・団体数）、関心（農法）＋地域の2段フィルタ、近くの個人（peers。自分と重なる農法の「あなたと同じ関心」ハイライト、その人の地域で近く開かれる「一緒に行けそうなイベント」提案つき）、地域の団体・サークル（friends。開催予定の直近イベントをステータスバッジ付きで表示）。</td></tr>
   <tr><td><code>#/groups/:id</code></td><td>団体詳細</td><td>活動リズム、歓迎メッセージ、「活動を受け取る」、季節の便り（読み取り専用）、団体のイベント、関わる在来種。</td></tr>
   <tr><td><code>#/events</code></td><td>イベント一覧</td><td>種別フィルタ、月別グルーピング（「7月（3件）」等の見出し）、イベントカード（開催ステータス・人気マーク・気になるトグル付き）。開催済みは「開催済みのイベント」セクションに分離し、薄い表示＋「当日の様子・声を見る」リンクにする。</td></tr>
   <tr><td><code>#/events/:id</code></td><td>イベント詳細</td><td>説明文を最上部に表示。開催ステータスバッジ、開催情報（日時・地域＋詳細案内の補足・定員と参加予定・料金・申込締切・主催・持ち物・雨天時）、当日の流れ（タイムライン）、気になるトグルと「◯人が気になる」、参加予定トグル、開催団体を見る（右下）、参加した人の声、関連在来種。開催済みの場合は申込系ボタンの代わりに終了案内（主催団体ページへの誘導）を表示。</td></tr>
@@ -197,7 +197,7 @@
   <tr><td><code>#/native-map</code></td><td>在来種マップ</td><td>Leaflet 地図（関東・福島、地域目安の円マーカー、出典確度で色分け）、在来種カード、情報提供CTA。</td></tr>
   <tr><td><code>#/native-map/contribute</code></td><td>在来種 情報提供</td><td>運営確認つき（moderated submission）の静的フォームと掲載フローの説明。</td></tr>
   <tr><td><code>#/native-varieties/:id</code></td><td>在来種詳細</td><td>地域・分類・別名・データ確度、背景、出典リンク、情報提供導線、関連する団体・イベント。</td></tr>
-  <tr><td><code>#/mypage</code></td><td>マイページ</td><td>サンプル表示であることを明示。プロフィール、統計（参加予定／気になる／受け取り中）、参加予定イベント（日付順）、気になっているイベント、公開範囲の説明。</td></tr>
+  <tr><td><code>#/mypage</code></td><td>マイページ</td><td>サンプル表示であることを明示。プロフィール、統計（参加予定／気になる／受け取り中）、参加予定イベント（日付順）、気になっているイベント、イベントに誘っている人、公開範囲の説明。</td></tr>
   <tr><td><code>#/manage</code></td><td>団体メニュー</td><td>団体向け管理の入口（デモ）。</td></tr>
   <tr><td><code>#/manage/group</code></td><td>団体プロフィール編集</td><td>団体情報・活動リズム・公式リンク等の静的フォーム。</td></tr>
   <tr><td><code>#/manage/event</code></td><td>イベント登録</td><td>イベント情報の静的フォーム（種別・日時・地域・定員・料金・申込締切・雨天時の扱い・当日の流れ・持ち物ほか）。承認済み団体のみ登録可能である旨を明示。</td></tr>
@@ -218,7 +218,7 @@
   <tr><td>気になる</td><td>イベント</td><td>トグル。押すとマイページの「気になっているイベント」に集まり、詳細ページの「◯人が気になる」が即時に±1される。</td></tr>
   <tr><td>参加予定に入れる</td><td>イベント</td><td>トグル（詳細ページの主ボタン）。押すと「参加予定に入れました」に変わり、参加予定人数の表示が即時に+1される。マイページの「参加予定イベント」に日付順で集まる。実際の申込確定は主催団体からの案内で行う想定である旨を注記。</td></tr>
   <tr><td>活動を受け取る</td><td>団体</td><td>トグル。マイページに受け取り中団体として表示（通知処理はデモのためなし）。</td></tr>
-  <tr><td>イベントに誘う</td><td>個人（peers）</td><td>トグル。より深いやりとり（連絡先交換）はイベントで直接会ったときに個人間で行う方針を注記で明示。</td></tr>
+  <tr><td>イベントに誘う</td><td>個人（peers）</td><td>トグル。カード内の「一緒に行けそうなイベント」提案で誘い先を具体化。誘った人はマイページに一覧表示。より深いやりとり（連絡先交換）はイベントで直接会ったときに個人間で行う方針を注記で明示。</td></tr>
   <tr><td>絞り込み</td><td>仲間（農法）／イベント（種別）</td><td>チップ型の <code>button</code>（<code>aria-pressed</code> 付与）。モバイルでは横スクロール。選択はセッション内のみ保持。</td></tr>
 </table>
 
@@ -263,7 +263,7 @@
   <tr><th>キー</th><th>内容</th><th>主なフィールド</th></tr>
   <tr><td><code>routes</code></td><td>主要導線カード</td><td>id, path, title, text, icon</td></tr>
   <tr><td><code>onboarding</code></td><td>はじめての方へ 3ステップ</td><td>step, title, text, cta, path</td></tr>
-  <tr><td><code>peers</code></td><td>近くの個人</td><td>id, nickname, area, status, methods[], oneLiner, lookingFor, photo, isMe</td></tr>
+  <tr><td><code>peers</code></td><td>近くの個人（9件）</td><td>id, nickname, area, status, methods[], oneLiner, lookingFor, photo, isMe</td></tr>
   <tr><td><code>friends</code></td><td>地域の団体・サークル</td><td>id, displayName, area, status, methods[], note, activity, rhythm（活動リズム）, welcome, links{website, instagram, sns}, updates[]（季節の便り）, eventId, photo</td></tr>
   <tr><td><code>events</code></td><td>運営登録イベント（9件）</td><td>id, date, day, time, title, place, areaNote, description, capacity, attending（参加予定数）, fee（料金）, deadline（申込締切）, interestedCount（気になる数）, host, hostGroupId, type, belongings, note, welcome, rainPolicy（雨天時）, schedule[]（当日の流れ）, seedExchange（種の交換会フラグ）, photo, relatedSeedIds[], voices[]（参加者の声）</td></tr>
   <tr><td><code>methods</code></td><td>農法（8種：自然農・自然栽培・有機農法・菌ちゃん農法・自然農法（福岡式）・パーマカルチャー・協生農法・炭素循環農法）</td><td>id, name, color, summary, entry, caution, perspective, founder（成り立ち・提唱者）, detail[]（解説段落）, links[]（出典・参考リンク）, values{tilling, fertilizer, grass, pesticide, beginner}</td></tr>
