@@ -23,6 +23,11 @@ const ui = {
 const STORE_KEY = "nounosato:ui";
 const PERSISTED = ["interested", "joined", "following", "invited"];
 
+// ログイン状態（P2-2）。null のときは従来どおり localStorage のみで動く。
+let session = null;
+let authEmailSent = false;
+const dbConnected = () => document.documentElement.dataset.source === "supabase";
+
 const loadUi = () => {
   try {
     const raw = JSON.parse(localStorage.getItem(STORE_KEY) || "{}");
@@ -1334,6 +1339,37 @@ const renderSeedDetail = (id) => {
   });
 };
 
+const authSection = () => {
+  if (!window.NOU_API?.enabled || !dbConnected()) return "";
+  if (session) {
+    return `
+      <section class="auth-panel is-signed-in">
+        <p><strong>ログイン中：</strong>${escapeHtml(session.user.email || "")}</p>
+        <p class="auth-note">「気になる」「参加予定」「活動を受け取る」は、この端末以外でも同じ状態で表示されます。</p>
+        <button type="button" class="button button-light" data-auth="signout">ログアウト</button>
+      </section>
+    `;
+  }
+  if (authEmailSent) {
+    return `
+      <section class="auth-panel">
+        <p><strong>ログイン用のメールを送りました。</strong></p>
+        <p class="auth-note">届いたメールのリンクを開くと、このサイトに戻ってログインが完了します。数分待っても届かない場合は迷惑メールもご確認ください。</p>
+      </section>
+    `;
+  }
+  return `
+    <section class="auth-panel">
+      <p><strong>ログイン（メールだけ・パスワード不要）</strong></p>
+      <p class="auth-note">ログインすると「気になる」「参加予定」「活動を受け取る」が端末をまたいで保存されます。登録に必要なのはメールアドレスだけです。</p>
+      <div class="auth-form">
+        <input type="email" id="auth-email" placeholder="メールアドレス" autocomplete="email" />
+        <button type="button" class="button button-primary" data-auth="send">ログインリンクを送る</button>
+      </div>
+    </section>
+  `;
+};
+
 const renderMyPage = () => {
   const interestedEvents = events.filter((event) => ui.interested.has(event.id));
   const joinedEvents = events
@@ -1351,6 +1387,7 @@ const renderMyPage = () => {
       <a class="button button-light" href="#/mypage/edit">プロフィールを編集</a>
     `,
     body: `
+      ${authSection()}
       <p class="form-help">これはデモ用の表示です。実際は、あなた自身の関心・気になる・記録がここに表示されます。</p>
       <section class="profile-panel">
         <div class="profile-main">
@@ -1785,6 +1822,8 @@ const mountSeedMap = () => {
 };
 
 const renderApp = () => {
+  // ログインメールから戻った直後は #access_token=... が付く。supabase-js が処理するまで描画しない。
+  if (window.location.hash && !window.location.hash.startsWith("#/")) return;
   const parts = getHashParts();
   const rootRoute = rootRouteFor(parts);
   const view = routeTable[rootRoute] ? routeTable[rootRoute](parts) : renderNotFound();
@@ -1834,6 +1873,37 @@ app.addEventListener("click", (event) => {
       });
     }
     saveUi();
+    persistActionToDb(kind, id, willOn);
+    return;
+  }
+
+  const authButton = event.target.closest("[data-auth]");
+  if (authButton) {
+    if (authButton.dataset.auth === "send") {
+      const input = document.querySelector("#auth-email");
+      const email = (input?.value || "").trim();
+      if (!email || !email.includes("@")) {
+        if (input) input.focus();
+        return;
+      }
+      authButton.disabled = true;
+      window.NOU_API.signInWithEmail(email)
+        .then(() => {
+          authEmailSent = true;
+          renderApp();
+        })
+        .catch((error) => {
+          console.warn("ログインメールの送信に失敗しました。", error);
+          authButton.disabled = false;
+          authButton.textContent = "送信に失敗しました。もう一度";
+        });
+    }
+    if (authButton.dataset.auth === "signout") {
+      window.NOU_API.signOut().then(() => {
+        session = null;
+        renderApp();
+      });
+    }
     return;
   }
 
@@ -1934,6 +2004,61 @@ const dbSeedToUi = (row, eventLinks) => ({
   relatedEventIds: eventLinks.get(row.id) || [],
 });
 
+// ログイン中は DB にも書く（未ログイン・mockフォールバック時は localStorage のみ）。
+const persistActionToDb = (kind, id, on) => {
+  if (!session || !dbConnected() || !window.NOU_API?.enabled) return;
+  const userId = session.user.id;
+  let task = null;
+  if (kind === "interested" || kind === "joined") {
+    task = window.NOU_API.setEventAction(userId, id, kind, on);
+  } else if (kind === "following") {
+    task = window.NOU_API.setFollow(userId, id, on);
+  }
+  // invited の相手（peers）はまだ実ユーザーではないため localStorage のみ。
+  if (task) task.catch((error) => console.warn("操作の保存に失敗しました。", error));
+};
+
+// ログイン時: DB の状態と localStorage の状態を合流させる。
+// ローカルにしかない操作は DB へ送り、以後は DB を正とする。
+const syncMyStateWithDb = async () => {
+  if (!session || !dbConnected() || !window.NOU_API?.enabled) return;
+  const userId = session.user.id;
+  try {
+    const mine = await window.NOU_API.fetchMyState(userId);
+    const dbInterested = new Set(mine.actions.filter((row) => row.kind === "interested").map((row) => row.event_id));
+    const dbJoined = new Set(mine.actions.filter((row) => row.kind === "joined").map((row) => row.event_id));
+    const dbFollowing = new Set(mine.follows.map((row) => row.group_id));
+
+    const eventIds = new Set(events.map((event) => event.id));
+    const groupIds = new Set(friends.map((group) => group.id));
+    const pushes = [];
+    ui.interested.forEach((id) => {
+      if (eventIds.has(id) && !dbInterested.has(id)) pushes.push(window.NOU_API.setEventAction(userId, id, "interested", true));
+    });
+    ui.joined.forEach((id) => {
+      if (eventIds.has(id) && !dbJoined.has(id)) pushes.push(window.NOU_API.setEventAction(userId, id, "joined", true));
+    });
+    ui.following.forEach((id) => {
+      if (groupIds.has(id) && !dbFollowing.has(id)) pushes.push(window.NOU_API.setFollow(userId, id, true));
+    });
+    await Promise.all(pushes);
+
+    ui.interested = new Set([...dbInterested, ...[...ui.interested].filter((id) => eventIds.has(id))]);
+    ui.joined = new Set([...dbJoined, ...[...ui.joined].filter((id) => eventIds.has(id))]);
+    ui.following = new Set([...dbFollowing, ...[...ui.following].filter((id) => groupIds.has(id))]);
+    saveUi();
+
+    // event_counts には自分の行も含まれるため、表示の二重加算を避ける
+    // （画面側は ui.joined / ui.interested にあるものへ +1 して見せるため）。
+    events.forEach((event) => {
+      if (dbJoined.has(event.id)) event.attending = Math.max(0, (event.attending || 0) - 1);
+      if (dbInterested.has(event.id)) event.interestedCount = Math.max(0, (event.interestedCount || 0) - 1);
+    });
+  } catch (error) {
+    console.warn("ログイン状態の同期に失敗しました。", error);
+  }
+};
+
 const hydrateFromApi = async () => {
   if (!window.NOU_API || !window.NOU_API.enabled) return false;
   try {
@@ -1965,7 +2090,7 @@ const hydrateFromApi = async () => {
 };
 
 window.addEventListener("hashchange", renderApp);
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
   loadUi();
 
   if (!window.location.hash) {
@@ -1974,7 +2099,26 @@ window.addEventListener("DOMContentLoaded", () => {
     renderApp();
   }
 
-  hydrateFromApi().then((ok) => {
-    if (ok) renderApp();
-  });
+  const hydrated = await hydrateFromApi();
+
+  if (window.NOU_API?.enabled) {
+    session = await window.NOU_API.getSession();
+    window.NOU_API.onAuthChange(async (next) => {
+      const wasLoggedIn = Boolean(session);
+      session = next;
+      if (session && !wasLoggedIn) {
+        authEmailSent = false;
+        await syncMyStateWithDb();
+        // ログインメールから戻った直後はマイページへ案内する。
+        if (!window.location.hash.startsWith("#/")) {
+          window.location.replace("#/mypage");
+          return;
+        }
+      }
+      renderApp();
+    });
+    if (session) await syncMyStateWithDb();
+  }
+
+  if (hydrated || session) renderApp();
 });

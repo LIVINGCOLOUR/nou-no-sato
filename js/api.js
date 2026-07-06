@@ -40,5 +40,58 @@
       if (error) throw error;
       return data;
     },
+
+    // P2-2: 認証（メールのマジックリンク）
+    async signInWithEmail(email) {
+      const { error } = await client.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: window.location.origin + window.location.pathname },
+      });
+      if (error) throw error;
+    },
+    async signOut() {
+      await client.auth.signOut();
+    },
+    async getSession() {
+      const { data } = await client.auth.getSession();
+      return data.session || null;
+    },
+    onAuthChange(callback) {
+      client.auth.onAuthStateChange((_event, session) => callback(session || null));
+    },
+
+    // P2-2: 操作の永続化（気になる／参加予定／活動を受け取る）
+    async fetchMyState(userId) {
+      const [actions, follows] = await Promise.all([
+        client.from("user_event_actions").select("event_id, kind").eq("user_id", userId),
+        client.from("follows").select("group_id").eq("user_id", userId),
+      ]);
+      if (actions.error) throw actions.error;
+      if (follows.error) throw follows.error;
+      return { actions: actions.data, follows: follows.data };
+    },
+    async setEventAction(userId, eventId, kind, on) {
+      if (on) {
+        const { error } = await client
+          .from("user_event_actions")
+          .upsert({ user_id: userId, event_id: eventId, kind });
+        if (error) throw error;
+      } else {
+        const { error } = await client
+          .from("user_event_actions")
+          .delete()
+          .match({ user_id: userId, event_id: eventId, kind });
+        if (error) throw error;
+      }
+    },
+    async setFollow(userId, groupId, on) {
+      if (on) {
+        const { error } = await client.from("follows").upsert({ user_id: userId, group_id: groupId });
+        if (error) throw error;
+      } else {
+        const { error } = await client.from("follows").delete().match({ user_id: userId, group_id: groupId });
+        if (error) throw error;
+      }
+    },
   };
 })();
