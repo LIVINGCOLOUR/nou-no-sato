@@ -592,6 +592,46 @@ const renderGroupDetail = (id) => {
   });
 };
 
+const methodCompareTable = () => `
+  <div class="table-scroll" role="region" aria-label="農法の比較表" tabindex="0">
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>農法</th>
+          <th>ひとこと</th>
+          <th>大切にする考え方</th>
+          <th>試しやすい入口</th>
+          <th>注意点</th>
+          <th>耕すか</th>
+          <th>肥料</th>
+          <th>草</th>
+          <th>農薬</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${methods
+          .map(
+            (method) => `
+              <tr>
+                <th scope="row"><a class="text-link" href="#/learn/${method.id}">${escapeHtml(method.name)}</a></th>
+                <td>${escapeHtml(method.summary)}</td>
+                <td>${escapeHtml(method.perspective)}</td>
+                <td>${escapeHtml(method.entry)}</td>
+                <td>${escapeHtml(method.caution)}</td>
+                <td>${escapeHtml(method.values.tilling)}</td>
+                <td>${escapeHtml(method.values.fertilizer)}</td>
+                <td>${escapeHtml(method.values.grass)}</td>
+                <td>${escapeHtml(method.values.pesticide)}</td>
+              </tr>
+            `,
+          )
+          .join("")}
+      </tbody>
+    </table>
+  </div>
+  <p class="map-note">横にスクロールして全体を見られます。並び順に優劣の意味はありません。</p>
+`;
+
 const renderLearn = () =>
   pageFrame({
     eyebrow: "Learn Farming Styles",
@@ -604,7 +644,7 @@ const renderLearn = () =>
           <span class="route-icon">${svgIcon("map")}</span>
           <span>
             <h3>在来種マップを見る</h3>
-            <p>茨城県に伝わる在来種・固定種を、地図と出典つきで地域ごとに知る。</p>
+            <p>関東・福島に伝わる在来種・固定種を、地図と出典つきで地域ごとに知る。</p>
           </span>
         </a>
       </section>
@@ -612,6 +652,11 @@ const renderLearn = () =>
       <section class="section-block">
         ${sectionHeading("book", "Farming Styles", "農法ごとに知る", "比較は優劣づけではありません。畑の条件や続けやすさで選び方が変わります。")}
         <div class="method-board">${methods.map(methodCard).join("")}</div>
+      </section>
+
+      <section class="section-block">
+        ${sectionHeading("note", "Compare", "比較表でまとめて見る", "ひとこと・考え方・入口・注意点・比較軸を一覧できます。")}
+        ${methodCompareTable()}
       </section>
     `,
   });
@@ -640,6 +685,8 @@ const renderMethodDetail = (id) => {
           <p>${escapeHtml(method.entry)}</p>
           <h2>注意点</h2>
           <p>${escapeHtml(method.caution)}</p>
+          ${method.founder ? `<h2>成り立ち・提唱者</h2><p>${escapeHtml(method.founder)}</p>` : ""}
+          ${method.detail && method.detail.length ? `<h2>くわしく知る</h2>${method.detail.map((para) => `<p>${escapeHtml(para)}</p>`).join("")}` : ""}
         </div>
         <aside class="side-panel">
           <h3>比較軸</h3>
@@ -649,6 +696,15 @@ const renderMethodDetail = (id) => {
             <li><strong>草</strong>${escapeHtml(method.values.grass)}</li>
             <li><strong>農薬</strong>${escapeHtml(method.values.pesticide)}</li>
           </ul>
+          ${
+            method.links && method.links.length
+              ? `<h3>出典・もっと学ぶ</h3>
+                 <ul class="source-list">
+                   ${method.links.map((link) => `<li><a class="text-link" href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(link.label)} ↗</a></li>`).join("")}
+                 </ul>
+                 <p class="side-note">この解説は上記の公開情報を参考に、当サイトが要約したものです。</p>`
+              : ""
+          }
         </aside>
       </article>
     `,
@@ -721,12 +777,12 @@ const renderNativeMap = () =>
   pageFrame({
     eyebrow: "Local Seed Map",
     title: "在来種マップ",
-    copy: "茨城県に伝わる在来種・固定種を、地域単位の概略位置で表示します。正確な採種場所や個人宅は示しません。出典つきで少しずつ整理しています。",
+    copy: "関東地方と福島県に伝わる在来種・固定種を、地域単位の概略位置で表示します。正確な採種場所や個人宅は示しません。出典つきで少しずつ整理しています。",
     actions: backLink("#/home", "ホームへ戻る"),
     body: `
       <div class="seed-map">
         <div class="map-area">
-          <div id="seed-map-canvas" class="map-canvas" aria-label="茨城県の在来種マップ">
+          <div id="seed-map-canvas" class="map-canvas" aria-label="関東・福島の在来種マップ">
             <p class="map-loading">地図を読み込んでいます…</p>
           </div>
           <div class="map-legend">
@@ -1158,7 +1214,7 @@ const mountSeedMap = () => {
     seedMap = null;
   }
   el.innerHTML = "";
-  seedMap = L.map(el, { scrollWheelZoom: false }).setView([36.3, 140.3], 9);
+  seedMap = L.map(el, { scrollWheelZoom: false }).setView([36.4, 139.8], 8);
   L.tileLayer("https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png", {
     attribution: "地理院タイル（国土地理院）",
     maxZoom: 18,
