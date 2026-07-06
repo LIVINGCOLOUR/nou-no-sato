@@ -172,6 +172,13 @@ const suggestEventFor = (peer) => {
 
 const nextEventOf = (groupId) => upcomingEvents().find((event) => event.hostGroupId === groupId) || null;
 
+// ホームに「動き」を出すため、全団体の季節の便りを新しい順にまとめる。
+const latestGroupUpdates = (count = 2) =>
+  friends
+    .flatMap((group) => (group.updates || []).map((item) => ({ ...item, groupId: group.id, groupName: group.displayName })))
+    .sort((a, b) => (parseEventDate(b.date) ?? 0) - (parseEventDate(a.date) ?? 0))
+    .slice(0, count);
+
 const renderTags = (items) => items.map((item) => `<span class="tag">${escapeHtml(item)}</span>`).join("");
 
 const backLink = (href, label = "戻る") => `<a class="back-link" href="${href}">${label}</a>`;
@@ -537,7 +544,28 @@ const renderHome = () =>
         <li>農法比較は優劣なし</li>
       </ul>
 
+      <section class="section-block">
+        ${sectionHeading("calendar", "Upcoming", "近日のイベント", "直近の3件。「気になる」を押して、行くかは後で決められます。")}
+        <div class="card-grid event-grid">${upcomingEvents()
+          .slice(0, 3)
+          .map((event) => eventCard(event))
+          .join("")}</div>
+        <p class="form-help"><a class="text-link" href="#/events">すべてのイベントを見る</a></p>
+      </section>
+
       ${onboardingSection()}
+
+      <section class="section-block">
+        ${sectionHeading("note", "Notice", "地域の最近の便り", "団体からの一方向のお知らせです。気になる団体は「活動を受け取る」でどうぞ。")}
+        <div class="update-list">
+          ${latestGroupUpdates(2)
+            .map(
+              (item) =>
+                `<article class="update-card"><span class="update-date">${escapeHtml(item.date)}</span><div><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.text)}</p><a class="text-link" href="#/groups/${item.groupId}">${escapeHtml(item.groupName)}のページへ</a></div></article>`,
+            )
+            .join("")}
+        </div>
+      </section>
 
       <section class="section-block">
         ${sectionHeading("note", "More", "ほかにできること", "記録や在来種マップも、いつでもどうぞ。")}
@@ -716,6 +744,17 @@ const renderEventDetail = (id) => {
 
       ${voicesBlock(event.voices)}
       ${relatedSeedsBlock(event.relatedSeedIds)}
+      ${(() => {
+        const others = upcomingEvents()
+          .filter((item) => item.hostGroupId === event.hostGroupId && item.id !== event.id)
+          .slice(0, 2);
+        return others.length
+          ? `<section class="section-block">
+              ${sectionHeading("calendar", "More Events", "この団体のほかのイベント", "予定が合わなくても、別の回から参加できます。")}
+              <div class="card-grid event-grid">${others.map((item) => eventCard(item, true)).join("")}</div>
+            </section>`
+          : "";
+      })()}
     `,
   });
 };
@@ -981,6 +1020,18 @@ const renderMethodDetail = (id) => {
           }
         </aside>
       </article>
+
+      ${
+        methodFilterOptions.some((opt) => opt.value === method.name)
+          ? `<section class="section-block">
+              ${sectionHeading("users", "Community", "この農法でつながる", "読むだけで終わらせず、同じ関心の仲間や近くのイベントへ。")}
+              <div class="action-row">
+                <a class="button button-primary" data-preset="memberMethod" data-preset-value="${escapeHtml(method.name)}" href="#/members">この農法に関心がある仲間を見る</a>
+                <a class="button button-light" href="#/events">近くのイベントを見る</a>
+              </div>
+            </section>`
+          : ""
+      }
     `,
   });
 };
@@ -1642,6 +1693,14 @@ app.addEventListener("click", (event) => {
       });
     }
     saveUi();
+    return;
+  }
+
+  // 別ページのフィルタを先に設定してから遷移するリンク（例：農法詳細→その農法の仲間一覧）。
+  const preset = event.target.closest("[data-preset]");
+  if (preset) {
+    const key = preset.dataset.preset;
+    if (key in ui) ui[key] = preset.dataset.presetValue;
     return;
   }
 
