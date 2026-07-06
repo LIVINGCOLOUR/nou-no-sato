@@ -2058,6 +2058,118 @@ textarea {
   background: linear-gradient(180deg, #ffe1b0, #ffd28a);
 }
 
+/* 募集ステータス */
+.tag-status-open {
+  color: #1f5e23;
+  border-color: rgba(46, 125, 50, 0.35);
+  background: #e4efd9;
+}
+
+.tag-status-urgent {
+  color: #8a2f12;
+  border-color: rgba(216, 90, 50, 0.4);
+  background: #ffe3d6;
+}
+
+.tag-status-past {
+  color: #6b6b64;
+  border-color: rgba(107, 107, 100, 0.3);
+  background: #eeeee8;
+}
+
+.card-past {
+  opacity: 0.82;
+}
+
+.card-past .event-date {
+  color: #6b6b64;
+  background: #eeeee8;
+}
+
+.past-note {
+  margin: 12px 0 0;
+  border-left: 4px solid rgba(107, 107, 100, 0.4);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  color: #5c5c55;
+  background: #f2f2ec;
+  font-size: 0.92rem;
+}
+
+/* 月別グルーピング */
+.month-block {
+  padding-top: 26px;
+}
+
+.month-block:first-of-type {
+  padding-top: 4px;
+}
+
+.month-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 12px;
+  color: var(--green-800);
+  font-size: 1.3rem;
+}
+
+.month-heading span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+/* 当日の流れ */
+.timeline {
+  display: grid;
+  gap: 0;
+  margin: 12px 0 0;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  list-style: none;
+}
+
+.timeline li {
+  display: grid;
+  grid-template-columns: 4.2em 1fr;
+  gap: 12px;
+  align-items: baseline;
+  border-bottom: 1px solid var(--line);
+  padding: 8px 0;
+}
+
+.timeline li:last-child {
+  border-bottom: 0;
+}
+
+.timeline-time {
+  color: var(--green-800);
+  font-size: 0.88rem;
+  font-weight: 900;
+}
+
+.timeline-label {
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+/* 参加予定トグル（primary見た目） */
+.pill-toggle.pill-primary {
+  color: #fff;
+  border-color: var(--green-700);
+  background: linear-gradient(180deg, var(--green-600), var(--green-700));
+  box-shadow: var(--soft-shadow);
+}
+
+.pill-toggle.pill-primary .pill-toggle-icon {
+  color: var(--green-800);
+  background: rgba(255, 255, 255, 0.92);
+}
+
 .event-detail .event-lead {
   margin: 12px 0 0;
   color: var(--ink);

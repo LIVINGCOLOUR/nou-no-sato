@@ -7,6 +7,7 @@ const app = document.querySelector("#app");
 // フィルタはセッション内のみ。記録・プロフィール・フォーム入力は保存しない。
 const ui = {
   interested: new Set(), // 気になるイベント
+  joined: new Set(), // 参加予定に入れたイベント
   following: new Set(), // 活動を受け取る団体
   invited: new Set(), // イベントに誘った個人
   memberMethod: "all", // 仲間ページの農法フィルタ
@@ -14,7 +15,7 @@ const ui = {
 };
 
 const STORE_KEY = "nounosato:ui";
-const PERSISTED = ["interested", "following", "invited"];
+const PERSISTED = ["interested", "joined", "following", "invited"];
 
 const loadUi = () => {
   try {
@@ -111,17 +112,61 @@ const isPopular = (event) => {
 };
 // 表示上の「気になる」人数（他の人の数＋自分が押していれば+1）。
 const interestedTotal = (event) => (event.interestedCount || 0) + (ui.interested.has(event.id) ? 1 : 0);
+// 表示上の参加予定人数（自分が参加予定に入れていれば+1）。
+const attendingTotal = (event) => (event.attending || 0) + (ui.joined.has(event.id) ? 1 : 0);
+
+// 日付は「M/D」表記。年はプロトタイプの想定年で補う。
+const EVENT_YEAR = 2026;
+const parseEventDate = (text) => {
+  if (!text) return null;
+  const [month, day] = text.split("/").map(Number);
+  if (!month || !day) return null;
+  return new Date(EVENT_YEAR, month - 1, day);
+};
+const todayDate = () => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+};
+
+// 募集ステータス: past(終了) / deadline-soon(締切間近) / few-left(残りわずか) / open(募集中)
+const eventStatus = (event) => {
+  const now = todayDate();
+  const date = parseEventDate(event.date);
+  if (date && date < now) return "past";
+  const deadline = parseEventDate(event.deadline);
+  if (deadline) {
+    const daysLeft = Math.round((deadline - now) / 86400000);
+    if (daysLeft < 0) return "past";
+    if (daysLeft <= 5) return "deadline-soon";
+  }
+  const remaining = capacityNum(event) - attendingTotal(event);
+  if (remaining > 0 && remaining <= 2) return "few-left";
+  return "open";
+};
+
+const statusBadge = (event) => {
+  const status = eventStatus(event);
+  if (status === "past") return `<span class="tag tag-status-past">終了</span>`;
+  if (status === "deadline-soon") return `<span class="tag tag-status-urgent">締切間近</span>`;
+  if (status === "few-left") return `<span class="tag tag-status-urgent">残りわずか</span>`;
+  return `<span class="tag tag-status-open">募集中</span>`;
+};
+
+const eventMonthLabel = (event) => {
+  const date = parseEventDate(event.date);
+  return date ? `${date.getMonth() + 1}月` : "日程調整中";
+};
 
 const renderTags = (items) => items.map((item) => `<span class="tag">${escapeHtml(item)}</span>`).join("");
 
 const backLink = (href, label = "戻る") => `<a class="back-link" href="${href}">${label}</a>`;
 
-// セッション内で実際に切り替わる軽いトグル（気になる / 受け取る / つながる）。
-const actionButton = ({ kind, id, on, off }) => {
+// セッション内で実際に切り替わる軽いトグル（気になる / 参加予定 / 受け取る / 誘う）。
+const actionButton = ({ kind, id, on, off, primary = false }) => {
   const active = ui[kind].has(id);
   return `
     <button
-      class="pill-toggle ${active ? "is-on" : ""}"
+      class="pill-toggle ${primary ? "pill-primary" : ""} ${active ? "is-on" : ""}"
       type="button"
       data-toggle="${kind}"
       data-id="${escapeHtml(id)}"
@@ -243,8 +288,10 @@ const onboardingSection = () => `
   </section>
 `;
 
-const eventCard = (event, compact = false) => `
-  <article class="event-card ${compact ? "card-compact" : ""}">
+const eventCard = (event, compact = false) => {
+  const isPast = eventStatus(event) === "past";
+  return `
+  <article class="event-card ${compact ? "card-compact" : ""} ${isPast ? "card-past" : ""}">
     <div class="event-top">
       <div class="event-date">${escapeHtml(event.date)}<small>${escapeHtml(event.day)}</small></div>
       <div>
@@ -255,21 +302,24 @@ const eventCard = (event, compact = false) => `
       </div>
     </div>
     <div class="tag-row event-tags">
-      ${isPopular(event) ? `<span class="tag tag-popular">人気</span>` : ""}
+      ${statusBadge(event)}
+      ${!isPast && isPopular(event) ? `<span class="tag tag-popular">人気</span>` : ""}
       <span class="tag">${escapeHtml(event.type)}</span>
       <span class="tag">運営登録</span>
     </div>
     ${
       compact
-        ? ""
-        : `<div class="action-row">
-            ${actionButton({ kind: "interested", id: event.id, on: "気になるに追加ずみ", off: "気になる" })}
-            <a class="card-action card-action-inline" href="#/events/${event.id}">詳細を見る</a>
-          </div>`
+        ? `<a class="card-action" href="#/events/${event.id}">詳細を見る</a>`
+        : isPast
+          ? `<a class="card-action" href="#/events/${event.id}">当日の様子・声を見る</a>`
+          : `<div class="action-row">
+              ${actionButton({ kind: "interested", id: event.id, on: "気になるに追加ずみ", off: "気になる" })}
+              <a class="card-action card-action-inline" href="#/events/${event.id}">詳細を見る</a>
+            </div>`
     }
-    ${compact ? `<a class="card-action" href="#/events/${event.id}">詳細を見る</a>` : ""}
   </article>
 `;
+};
 
 const peerCard = (peer) => `
   <article class="peer-card">
@@ -494,6 +544,19 @@ const renderEvents = () => {
   const type = ui.eventType;
   const list = events.filter((event) => type === "all" || event.type === type);
 
+  const byDate = (a, b) => (parseEventDate(a.date) ?? 0) - (parseEventDate(b.date) ?? 0);
+  const upcoming = list.filter((event) => eventStatus(event) !== "past").sort(byDate);
+  const past = list.filter((event) => eventStatus(event) === "past").sort(byDate).reverse();
+
+  // 開催月ごとにまとめて、カレンダー感覚で眺められるようにする。
+  const monthGroups = [];
+  upcoming.forEach((event) => {
+    const label = eventMonthLabel(event);
+    const group = monthGroups.find((item) => item.label === label);
+    if (group) group.events.push(event);
+    else monthGroups.push({ label, events: [event] });
+  });
+
   return pageFrame({
     eyebrow: "Real Events",
     title: "イベント一覧",
@@ -502,9 +565,26 @@ const renderEvents = () => {
     body: `
       ${filterChips("eventType", eventTypeOptions)}
       ${
-        list.length
-          ? `<div class="card-grid event-grid">${list.map((event) => eventCard(event)).join("")}</div>`
-          : `<p class="empty-note">この種別のイベントは今ありません。「すべて」に戻して見てください。</p>`
+        upcoming.length
+          ? monthGroups
+              .map(
+                (group) => `
+                  <section class="month-block">
+                    <h2 class="month-heading">${escapeHtml(group.label)}<span>${group.events.length}件</span></h2>
+                    <div class="card-grid event-grid">${group.events.map((event) => eventCard(event)).join("")}</div>
+                  </section>
+                `,
+              )
+              .join("")
+          : `<p class="empty-note">この種別の募集中イベントは今ありません。「すべて」に戻して見てください。</p>`
+      }
+      ${
+        past.length
+          ? `<section class="section-block">
+              ${sectionHeading("note", "Past Events", "開催済みのイベント", "雰囲気の参考に。参加した人の声は各詳細ページで読めます。")}
+              <div class="card-grid event-grid">${past.map((event) => eventCard(event)).join("")}</div>
+            </section>`
+          : ""
       }
     `,
   });
@@ -528,7 +608,8 @@ const renderEventDetail = (id) => {
         <div class="detail-body">
           <div class="badge-row">
             <span class="privacy-note">運営登録イベント</span>
-            ${isPopular(event) ? `<span class="tag tag-popular">人気</span>` : ""}
+            ${statusBadge(event)}
+            ${eventStatus(event) !== "past" && isPopular(event) ? `<span class="tag tag-popular">人気</span>` : ""}
           </div>
           <p class="event-lead">${escapeHtml(event.description)}</p>
           ${event.welcome ? `<p class="welcome-banner">${escapeHtml(event.welcome)}</p>` : ""}
@@ -536,20 +617,33 @@ const renderEventDetail = (id) => {
           <dl class="detail-list">
             <div><dt>日時</dt><dd>${escapeHtml(event.date)}(${escapeHtml(event.day)}) ${escapeHtml(event.time)}</dd></div>
             <div><dt>地域</dt><dd>${escapeHtml(event.place)}${event.areaNote ? `（${escapeHtml(event.areaNote)}）` : ""}</dd></div>
-            <div><dt>定員</dt><dd>${escapeHtml(event.capacity)}（参加予定 ${escapeHtml(String(event.attending ?? 0))}名）</dd></div>
+            <div><dt>定員</dt><dd>${escapeHtml(event.capacity)}（参加予定 <span data-attending-count="${event.id}" data-base="${event.attending ?? 0}">${attendingTotal(event)}</span>名）</dd></div>
             <div><dt>料金</dt><dd>${escapeHtml(event.fee || "無料")}</dd></div>
             <div><dt>申込締切</dt><dd>${escapeHtml(event.deadline || "-")}</dd></div>
             <div><dt>主催</dt><dd>${escapeHtml(host ? host.displayName : event.host)}</dd></div>
             <div><dt>持ち物</dt><dd>${escapeHtml(event.belongings)}</dd></div>
+            ${event.rainPolicy ? `<div><dt>雨天時</dt><dd>${escapeHtml(event.rainPolicy)}</dd></div>` : ""}
           </dl>
+          ${
+            event.schedule && event.schedule.length
+              ? `<h2>当日の流れ</h2>
+                 <ol class="timeline">
+                   ${event.schedule.map((step) => `<li><span class="timeline-time">${escapeHtml(step.time)}</span><span class="timeline-label">${escapeHtml(step.label)}</span></li>`).join("")}
+                 </ol>`
+              : ""
+          }
           ${event.note ? `<p class="form-help">${escapeHtml(event.note)}</p>` : ""}
           ${event.seedExchange ? seedExchangeRulesBlock() : ""}
-          <div class="action-row">
-            ${actionButton({ kind: "interested", id: event.id, on: "気になるに追加ずみ", off: "気になる" })}
-            <button class="button button-primary" type="button">参加予定に入れる（デモ）</button>
-          </div>
-          <p class="interested-count" data-interested-count="${event.id}" data-base="${event.interestedCount || 0}">${interestedTotal(event)}人が「気になる」を押しています</p>
-          <p class="form-help">まずは「気になる」だけでOK。参加するかは後から決められます。</p>
+          ${
+            eventStatus(event) === "past"
+              ? `<p class="past-note">このイベントは終了しました。次回の予定は<a class="text-link" href="${host ? `#/groups/${host.id}` : "#/events"}">団体ページ</a>や季節の便りでお知らせします。</p>`
+              : `<div class="action-row">
+                   ${actionButton({ kind: "interested", id: event.id, on: "気になるに追加ずみ", off: "気になる" })}
+                   ${actionButton({ kind: "joined", id: event.id, on: "参加予定に入れました", off: "参加予定に入れる", primary: true })}
+                 </div>
+                 <p class="interested-count" data-interested-count="${event.id}" data-base="${event.interestedCount || 0}">${interestedTotal(event)}人が「気になる」を押しています</p>
+                 <p class="form-help">まずは「気になる」だけでOK。参加予定はマイページにまとまります（実際の申込確定は主催団体からの案内で行う想定です）。</p>`
+          }
           ${host ? `<div class="corner-action"><a class="card-action" href="#/groups/${host.id}">開催団体を見る</a></div>` : ""}
         </div>
       </article>
@@ -1037,6 +1131,9 @@ const renderSeedDetail = (id) => {
 
 const renderMyPage = () => {
   const interestedEvents = events.filter((event) => ui.interested.has(event.id));
+  const joinedEvents = events
+    .filter((event) => ui.joined.has(event.id))
+    .sort((a, b) => (parseEventDate(a.date) ?? 0) - (parseEventDate(b.date) ?? 0));
   const followingGroups = friends.filter((group) => ui.following.has(group.id));
 
   return pageFrame({
@@ -1056,7 +1153,7 @@ const renderMyPage = () => {
           </div>
         </div>
         <dl class="stats-grid">
-          <div><dt>栽培記録</dt><dd>${profile.noteCount}件</dd></div>
+          <div><dt>参加予定</dt><dd>${ui.joined.size}件</dd></div>
           <div><dt>気になる</dt><dd>${ui.interested.size}件</dd></div>
           <div><dt>受け取り中</dt><dd>${ui.following.size}団体</dd></div>
         </dl>
@@ -1090,10 +1187,14 @@ const renderMyPage = () => {
       <section class="section-block two-column">
         <div>
           <h2>参加予定イベント</h2>
-          <div class="stack-list">${events.slice(0, profile.upcomingEvents).map((event) => eventCard(event, true)).join("")}</div>
+          ${
+            joinedEvents.length
+              ? `<div class="stack-list">${joinedEvents.map((event) => eventCard(event, true)).join("")}</div>`
+              : `<p class="empty-note">まだありません。イベント詳細の「参加予定に入れる」を押すと、ここにまとまります。</p>`
+          }
         </div>
         <div>
-          <h2>最近の栽培記録</h2>
+          <h2>最近の栽培記録（記入例）</h2>
           <div class="card-grid compact-grid">${notes.slice(0, 2).map(noteCard).join("")}</div>
         </div>
       </section>
@@ -1257,8 +1358,24 @@ const renderManageEventForm = () =>
             <input type="text" value="8名" />
           </label>
           <label>
+            料金
+            <input type="text" value="無料" placeholder="例：無料 / 500円（材料費）" />
+          </label>
+          <label>
+            申込締切
+            <input type="date" value="2026-06-25" />
+          </label>
+          <label>
             持ち物
             <input type="text" value="帽子、飲み物、汚れてもよい靴" />
+          </label>
+          <label>
+            雨天時の扱い
+            <input type="text" value="小雨決行。荒天時は中止（前日18時までにご連絡）" />
+          </label>
+          <label>
+            当日の流れ（任意）
+            <textarea rows="3">10:00 集合・自己紹介 / 10:20 畑を歩いて草の観察 / 11:20 考え方の話 / 11:50 ふりかえり</textarea>
           </label>
           <label>
             紹介文
@@ -1403,6 +1520,12 @@ app.addEventListener("click", (event) => {
       document.querySelectorAll(`[data-interested-count="${id}"]`).forEach((el) => {
         const base = Number(el.dataset.base) || 0;
         el.textContent = `${base + (willOn ? 1 : 0)}人が「気になる」を押しています`;
+      });
+    }
+    if (kind === "joined") {
+      document.querySelectorAll(`[data-attending-count="${id}"]`).forEach((el) => {
+        const base = Number(el.dataset.base) || 0;
+        el.textContent = String(base + (willOn ? 1 : 0));
       });
     }
     saveUi();
