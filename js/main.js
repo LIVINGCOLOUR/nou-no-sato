@@ -14,6 +14,7 @@ const ui = {
   memberArea: "all", // 仲間ページの地域フィルタ
   eventType: "all", // イベントページの種別フィルタ
   eventArea: "all", // イベントページの地域フィルタ
+  noteCrop: "all", // 栽培記録の作物フィルタ
 };
 
 const STORE_KEY = "nounosato:ui";
@@ -439,6 +440,7 @@ const noteCard = (note) => `
         <p>${escapeHtml(note.memo)}</p>
       </div>
     </div>
+    ${note.learning ? `<p class="note-learning"><span>学び：</span>${escapeHtml(note.learning)}</p>` : ""}
     <div class="tag-row">
       <span class="tag">${escapeHtml(note.method)}</span>
       <span class="tag">非公開</span>
@@ -1036,22 +1038,73 @@ const renderMethodDetail = (id) => {
   });
 };
 
-const renderNotes = () =>
-  pageFrame({
+const parseNoteDate = (text) => {
+  const [year, month, day] = (text || "").split("/").map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+};
+
+const noteCropOptions = [
+  { value: "all", label: "すべて" },
+  ...[...new Set(notes.map((note) => note.crop))].map((crop) => ({ value: crop, label: crop })),
+];
+
+const renderNotes = () => {
+  const crop = ui.noteCrop;
+  const list = notes
+    .filter((note) => crop === "all" || note.crop === crop)
+    .sort((a, b) => (parseNoteDate(b.date) ?? 0) - (parseNoteDate(a.date) ?? 0));
+
+  // 月ごとにまとめて、あとから振り返りやすくする。
+  const monthGroups = [];
+  list.forEach((note) => {
+    const date = parseNoteDate(note.date);
+    const label = date ? `${date.getFullYear()}年${date.getMonth() + 1}月` : "日付なし";
+    const group = monthGroups.find((item) => item.label === label);
+    if (group) group.notes.push(note);
+    else monthGroups.push({ label, notes: [note] });
+  });
+
+  const cropCount = new Set(notes.map((note) => note.crop)).size;
+  const learningCount = notes.filter((note) => note.learning).length;
+
+  return pageFrame({
     eyebrow: "Private Field Notes",
     title: "栽培記録",
     copy: "自分だけの非公開メモ。位置情報や畑の住所は扱いません。",
     actions: `<a class="button button-primary" href="#/notes/new">新しく記録する</a>`,
     body: `
+      <div class="peer-band">
+        <div><strong>${notes.length}</strong><span>記録</span></div>
+        <div><strong>${cropCount}</strong><span>作物</span></div>
+        <div><strong>${learningCount}</strong><span>学びメモ</span></div>
+        <p class="peer-band-note">下の記録は記入例です。実際は自分の記録だけがここに並びます。</p>
+      </div>
       <div class="trust-list">
         <div><strong>基本非公開</strong><span>公開タイムラインはありません。</span></div>
         <div><strong>位置情報なし</strong><span>畑住所や正確な地点は扱いません。</span></div>
         <div><strong>自分の学び</strong><span>共有よりも振り返りを優先します。</span></div>
       </div>
-      <p class="form-help">下のカードは記入例です。</p>
-      <div class="card-grid compact-grid">${notes.map(noteCard).join("")}</div>
+      <div class="filter-stack">
+        <div class="filter-row"><span class="filter-label">作物</span>${filterChips("noteCrop", noteCropOptions)}</div>
+      </div>
+      ${
+        monthGroups.length
+          ? monthGroups
+              .map(
+                (group) => `
+                  <section class="month-block">
+                    <h2 class="month-heading">${escapeHtml(group.label)}<span>${group.notes.length}件</span></h2>
+                    <div class="card-grid compact-grid">${group.notes.map(noteCard).join("")}</div>
+                  </section>
+                `,
+              )
+              .join("")
+          : `<p class="empty-note">この作物の記録はまだありません。「すべて」に戻すか、新しく記録してみましょう。</p>`
+      }
     `,
   });
+};
 
 const renderNoteForm = () =>
   pageFrame({
@@ -1274,7 +1327,10 @@ const renderMyPage = () => {
     eyebrow: "My Page",
     title: "マイページ",
     copy: "自分の関心や、気になっていることを軽く振り返る画面です。",
-    actions: backLink("#/home", "ホームへ戻る"),
+    actions: `
+      ${backLink("#/home", "ホームへ戻る")}
+      <a class="button button-light" href="#/mypage/edit">プロフィールを編集</a>
+    `,
     body: `
       <p class="form-help">これはデモ用の表示です。実際は、あなた自身の関心・気になる・記録がここに表示されます。</p>
       <section class="profile-panel">
@@ -1342,6 +1398,72 @@ const renderMyPage = () => {
           <div class="card-grid compact-grid">${notes.slice(0, 2).map(noteCard).join("")}</div>
         </div>
       </section>
+    `,
+  });
+};
+
+const renderProfileEdit = () => {
+  const stages = ["はじめたばかり", "プランター栽培", "家庭菜園中", "家庭菜園3年目以上", "畑あり"];
+  const interestChoices = ["自然農", "自然栽培", "有機農法", "菌ちゃん農法", "在来種に関心"];
+  return pageFrame({
+    eyebrow: "Edit Profile",
+    title: "プロフィールを編集",
+    copy: "仲間探しに表示される内容を整えます。（デモのため保存はされません）",
+    actions: backLink("#/mypage", "マイページへ戻る"),
+    body: `
+      <div class="note-layout">
+        <form class="note-form" aria-label="プロフィール入力イメージ">
+          <label>
+            ニックネーム
+            <input type="text" value="のうこ" />
+          </label>
+          <label>
+            地域（市町村程度）
+            <input type="text" value="${escapeHtml(profile.area)}" />
+          </label>
+          <label>
+            いまのステージ
+            <select>
+              ${stages.map((stage) => `<option${stage === profile.status ? " selected" : ""}>${escapeHtml(stage)}</option>`).join("")}
+            </select>
+          </label>
+          <div class="field">
+            <span class="field-label">関心のあること</span>
+            <span class="choice-row">
+              ${interestChoices
+                .map(
+                  (choice) =>
+                    `<label><input type="checkbox"${profile.interests.includes(choice) ? " checked" : ""} /> ${escapeHtml(choice)}</label>`,
+                )
+                .join("")}
+            </span>
+          </div>
+          <label>
+            ひとこと（畑の様子・いまの気分）
+            <input type="text" value="プランターから畝へ。失敗も記録して楽しんでいます。" />
+          </label>
+          <label>
+            さがしている
+            <input type="text" value="近所でゆるく情報交換できる人" />
+          </label>
+          <label>
+            アイコン画像（任意）
+            <span class="fake-upload">画像を選ぶ見た目だけ</span>
+          </label>
+          <p class="form-help">仲間探しに表示されるのは、ニックネーム・市町村程度の地域・ステージ・関心・ひとことだけです。本名・連絡先・詳細住所は登録できません。</p>
+          <button class="button button-primary" type="button">保存する（ダミー）</button>
+        </form>
+        <aside class="side-panel">
+          <h3>公開範囲</h3>
+          <p>プロフィールは仲間探しのカードにだけ使われます。栽培記録が他の人に見えることはありません。</p>
+          <div class="tag-row">
+            <span class="tag">本名不要</span>
+            <span class="tag">連絡先なし</span>
+            <span class="tag">市町村程度</span>
+          </div>
+          <p class="side-note">連絡先の交換は、イベントで直接会ったときに個人どうしで行う方針です。</p>
+        </aside>
+      </div>
     `,
   });
 };
@@ -1582,7 +1704,7 @@ const routeTable = {
   notes: (parts) => (parts[1] === "new" ? renderNoteForm() : renderNotes()),
   "native-map": (parts) => (parts[1] === "contribute" ? renderSeedContribute() : renderNativeMap()),
   "native-varieties": (parts) => renderSeedDetail(parts[1]),
-  mypage: () => renderMyPage(),
+  mypage: (parts) => (parts[1] === "edit" ? renderProfileEdit() : renderMyPage()),
   manage: (parts) => {
     if (parts[1] === "group") return renderManageGroup();
     if (parts[1] === "event") return renderManageEventForm();

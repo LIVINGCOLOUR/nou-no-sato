@@ -121,7 +121,7 @@
   <table>
     <tr><th>文書名</th><td>農の里（仮称）基本仕様書</td></tr>
     <tr><th>名称の扱い</th><td>「農の里」は仮称。正式名称は検討中（改称時はUI・文書の名称を一括更新する）。</td></tr>
-    <tr><th>版数</th><td>1.8（全体エンハンス：ホームのライブ表示・サイトフッター・農法→仲間の導線・イベント回遊を反映）</td></tr>
+    <tr><th>版数</th><td>1.9（プロフィール編集画面の新設・栽培記録の管理機能＝統計/作物フィルタ/月別整理を反映）</td></tr>
     <tr><th>作成日</th><td>2026年7月6日</td></tr>
     <tr><th>対象バージョン</th><td>main ブランチ（2026年7月6日 時点）</td></tr>
     <tr><th>リポジトリ</th><td>github.com/LIVINGCOLOUR/nou-no-sato</td></tr>
@@ -192,12 +192,13 @@
   <tr><td><code>#/learn</code></td><td>学ぶ</td><td>先頭に在来種マップへの導線、農法カード8種、全農法の比較表（ひとこと/考え方/入口/注意点/比較軸。横スクロール・先頭列固定）、技法カード4種。</td></tr>
   <tr><td><code>#/learn/:id</code></td><td>農法詳細</td><td>考え方・入口・注意点、成り立ち・提唱者、くわしい解説、比較軸（耕す/肥料/草/農薬）、出典・参考リンク（Web公開情報を当サイトが要約した旨を明記）。優劣づけしない前提の文言。末尾に「この農法でつながる」（仲間ページを当該農法で絞り込んだ状態で開くリンク＋イベント一覧への導線。仲間フィルタにある農法のみ表示）。</td></tr>
   <tr><td><code>#/techniques/:id</code></td><td>技法詳細</td><td>農法を横断する技法（自家採種・コンパニオンプランツ・緑肥・ぼかし肥料づくり）。ひとこと・入口・解説・つながる農法・出典。自家採種は在来種マップ／情報提供へ相互リンク。</td></tr>
-  <tr><td><code>#/notes</code></td><td>栽培記録一覧</td><td>非公開方針の信頼リスト、記入例カード（記入例であることを明示）。</td></tr>
+  <tr><td><code>#/notes</code></td><td>栽培記録一覧</td><td>統計帯（記録数・作物数・学びメモ数）、非公開方針の信頼リスト、作物フィルタ、月別グルーピング（新しい月から）。記入例カードには「学び」も表示（記入例であることを明示）。</td></tr>
   <tr><td><code>#/notes/new</code></td><td>栽培記録作成</td><td>作物・日付・農法（選択）・ひとこと・うまくいったこと／学び・写真（見た目のみ）の静的フォーム。保存なし。</td></tr>
   <tr><td><code>#/native-map</code></td><td>在来種マップ</td><td>Leaflet 地図（関東・福島、地域目安の円マーカー、出典確度で色分け）、在来種カード、情報提供CTA。</td></tr>
   <tr><td><code>#/native-map/contribute</code></td><td>在来種 情報提供</td><td>運営確認つき（moderated submission）の静的フォームと掲載フローの説明。</td></tr>
   <tr><td><code>#/native-varieties/:id</code></td><td>在来種詳細</td><td>地域・分類・別名・データ確度、背景、出典リンク、情報提供導線、関連する団体・イベント。</td></tr>
-  <tr><td><code>#/mypage</code></td><td>マイページ</td><td>サンプル表示であることを明示。プロフィール、統計（参加予定／気になる／受け取り中／誘っている人）、参加予定イベント（日付順）、気になっているイベント、イベントに誘っている人、公開範囲の説明。</td></tr>
+  <tr><td><code>#/mypage</code></td><td>マイページ</td><td>サンプル表示であることを明示。プロフィール、統計（参加予定／気になる／受け取り中／誘っている人）、参加予定イベント（日付順）、気になっているイベント、イベントに誘っている人、公開範囲の説明。「プロフィールを編集」への導線。</td></tr>
+  <tr><td><code>#/mypage/edit</code></td><td>プロフィール編集</td><td>ニックネーム・地域（市町村程度）・ステージ・関心・ひとこと・さがしている・アイコン（見た目のみ）の静的フォーム。本名・連絡先・詳細住所は登録できない旨と公開範囲を明記。保存なし。</td></tr>
   <tr><td><code>#/manage</code></td><td>団体メニュー</td><td>団体向け管理の入口（デモ）。プロフィール編集・イベント登録への導線と、新規登録の流れ（申請→運営審査→承認→掲載）を表示。</td></tr>
   <tr><td><code>#/manage/group</code></td><td>団体プロフィール編集</td><td>団体情報・活動リズム・歓迎メッセージ・季節の便り（一方向・返信なしの旨を明記）・公式リンク等の静的フォーム。</td></tr>
   <tr><td><code>#/manage/event</code></td><td>イベント登録</td><td>イベント情報の静的フォーム（種別・日時・地域・定員・料金・申込締切・雨天時の扱い・当日の流れ・持ち物ほか）。承認済み団体のみ登録可能である旨を明示。</td></tr>
@@ -269,7 +270,7 @@
   <tr><td><code>events</code></td><td>運営登録イベント（9件）</td><td>id, date, day, time, title, place, areaNote, description, capacity, attending（参加予定数）, fee（料金）, deadline（申込締切）, interestedCount（気になる数）, host, hostGroupId, type, belongings, note, welcome, rainPolicy（雨天時）, schedule[]（当日の流れ）, seedExchange（種の交換会フラグ）, photo, relatedSeedIds[], voices[]（参加者の声）</td></tr>
   <tr><td><code>methods</code></td><td>農法（8種：自然農・自然栽培・有機農法・菌ちゃん農法・自然農法（福岡式）・パーマカルチャー・協生農法・炭素循環農法）</td><td>id, name, color, summary, entry, caution, perspective, founder（成り立ち・提唱者）, detail[]（解説段落）, links[]（出典・参考リンク）, values{tilling, fertilizer, grass, pesticide, beginner}</td></tr>
   <tr><td><code>techniques</code></td><td>農法横断の技法（4種：自家採種・コンパニオンプランツ・緑肥・ぼかし肥料づくり）</td><td>id, name, color, tagline, entry, detail[], relatedMethodIds[], seedMapLink, links[]</td></tr>
-  <tr><td><code>notes</code></td><td>栽培記録の記入例</td><td>id, date, crop, method, memo, learning, photo</td></tr>
+  <tr><td><code>notes</code></td><td>栽培記録の記入例（7件・2026年5〜7月）</td><td>id, date, crop, method, memo, learning, photo</td></tr>
   <tr><td><code>seeds</code></td><td>在来種・固定種（関東・福島 25件：茨城9・栃木2・群馬2・埼玉2・千葉2・東京3・神奈川2・福島3）</td><td>id, name, aliases[], cropType, area, lat, lng, sourceType（local_material / research_needed）, sourceLabel, sourceName, sourceUrl, descriptionShort, dataConfidence, locationNote, photo, relatedGroupId, relatedEventIds[]</td></tr>
   <tr><td><code>profile</code></td><td>マイページのサンプル</td><td>displayName, area, status, interests[], noteCount, upcomingEvents, favoriteMethod, privacy[]</td></tr>
 </table>

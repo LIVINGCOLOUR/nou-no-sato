@@ -2656,3 +2656,14 @@ textarea {
     gap: 18px;
   }
 }
+
+.note-learning {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.note-learning span {
+  color: var(--green-800);
+  font-weight: 900;
+}
