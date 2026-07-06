@@ -543,6 +543,17 @@ const renderHome = () =>
         ${sectionHeading("note", "More", "ほかにできること", "記録や在来種マップも、いつでもどうぞ。")}
         ${routeCards(["notes", "native-map"])}
       </section>
+
+      <section class="section-block">
+        ${sectionHeading("users", "For Groups", "団体・サークルの方へ", "イベントを開く側として参加しませんか。")}
+        <a class="route-card" href="#/manage">
+          <span class="route-icon">${svgIcon("users")}</span>
+          <span>
+            <h3>団体・活動を登録する</h3>
+            <p>団体プロフィールとイベントを登録できます。掲載は運営の審査・承認を経て始まります。</p>
+          </span>
+        </a>
+      </section>
     `,
   });
 
@@ -582,10 +593,9 @@ const renderMembers = () => {
 
       <section class="section-block">
         ${sectionHeading("users", "Groups", "地域の団体・サークル", "活動のリズムがある集まり。イベント参加からつながれます。")}
+        <p class="form-help">団体・活動者の方へ：<a class="text-link" href="#/manage">団体プロフィールやイベントの登録はこちら（運営審査あり）</a></p>
         ${groupList.length ? `<div class="card-grid">${groupList.map(friendCard).join("")}</div>` : emptyNote("団体")}
       </section>
-
-      <p class="form-help">団体・活動者の方へ：<a class="text-link" href="#/manage">団体プロフィールやイベントを登録（団体向け管理）</a></p>
     `,
   });
 };
@@ -1298,7 +1308,7 @@ const renderManageHome = () =>
   pageFrame({
     eyebrow: "団体向け管理（デモ）",
     title: "団体メニュー",
-    copy: "承認された団体・活動者が、自分たちのプロフィールとイベントを登録・編集する画面です。Phase 1ではダミーの静的フォームで、ログインや保存処理はありません。",
+    copy: "承認された団体・活動者が、自分たちのプロフィールとイベントを登録・編集する画面です。（デモのため、ログインや保存処理はありません）",
     actions: backLink("#/members", "仲間一覧へ戻る"),
     body: `
       <div class="route-grid">
@@ -1317,6 +1327,15 @@ const renderManageHome = () =>
           </span>
         </a>
       </div>
+      <section class="section-block">
+        ${sectionHeading("book", "How to Join", "新規登録の流れ", "これから掲載を始める団体・活動者の方へ。")}
+        <div class="trust-list">
+          <div><strong>1. 申請</strong><span>団体プロフィールを記入して送信します。</span></div>
+          <div><strong>2. 運営審査</strong><span>活動の実在性とプライバシー方針への同意を運営が確認します。</span></div>
+          <div><strong>3. 承認</strong><span>団体アカウントが発行され、情報を編集できるようになります。</span></div>
+          <div><strong>4. 掲載</strong><span>「仲間を探す」とイベント一覧に表示されます。</span></div>
+        </div>
+      </section>
       <p class="form-help">実際の運用では、団体登録は運営の審査・承認を経たアカウントだけが利用できます。第三者が他団体の情報を登録・編集することはできません。</p>
     `,
   });
