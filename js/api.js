@@ -2,14 +2,12 @@
 // anon key は公開前提の値（RLSが守る）。service_role キーは絶対にここへ書かない。
 (() => {
   const SUPABASE_URL = "https://msnjnyfncnismoxpgndh.supabase.co";
-  const SUPABASE_ANON_KEY = "PASTE_ANON_KEY_HERE"; // ダッシュボード Settings → API → anon public
+  const SUPABASE_ANON_KEY =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zbmpueWZuY25pc21veHBnbmRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNjIxMDksImV4cCI6MjA5ODkzODEwOX0.CTxbquk95zJx9UtITm1-EXyhRajNtEXK6KyUWP-N7dc";
 
   // supabase-js（CDN）が読み込まれていて、キーが設定済みのときだけ有効になる。
   // 未設定の間、フロントは従来どおり mock-data.js で動く。
-  const ready =
-    typeof window !== "undefined" &&
-    window.supabase &&
-    SUPABASE_ANON_KEY !== "PASTE_ANON_KEY_HERE";
+  const ready = typeof window !== "undefined" && window.supabase && SUPABASE_ANON_KEY.length > 0;
 
   const client = ready ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 

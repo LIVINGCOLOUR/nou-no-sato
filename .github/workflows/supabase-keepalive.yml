@@ -1,0 +1,22 @@
+# Supabase 無料枠は約1週間無アクセスで一時停止するため、週2回軽いクエリで稼働を維持する。
+# 使っているのは公開前提の anon キー（RLSで保護）。
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: "17 0 * * 1,4" # 月・木 9:17 JST ごろ
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query one row
+        env:
+          SUPABASE_URL: https://msnjnyfncnismoxpgndh.supabase.co
+          SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zbmpueWZuY25pc21veHBnbmRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNjIxMDksImV4cCI6MjA5ODkzODEwOX0.CTxbquk95zJx9UtITm1-EXyhRajNtEXK6KyUWP-N7dc
+        run: |
+          curl -sf "$SUPABASE_URL/rest/v1/seeds?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" > /dev/null
+          echo "Supabase is awake."

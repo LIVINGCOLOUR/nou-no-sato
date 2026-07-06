@@ -1,5 +1,8 @@
 const data = window.NOU_NO_SATO_DATA;
-const { events, friends, methods, notes, profile, routes, seeds, peers, onboarding, techniques } = data;
+// events / friends / seeds はP2-1以降Supabaseから取得して差し替える（失敗時はモックのまま動く）。
+// methods / techniques / notes / peers / profile 等は当面静的コンテンツとして mock-data.js を正とする。
+let { events, friends, seeds } = data;
+const { methods, notes, profile, routes, peers, onboarding, techniques } = data;
 
 const app = document.querySelector("#app");
 
@@ -222,12 +225,12 @@ const methodFilterOptions = [
   { value: "菌ちゃん農法", label: "菌ちゃん農法" },
 ];
 
-const eventTypeOptions = [
+const buildEventTypeOptions = () => [
   { value: "all", label: "すべて" },
   ...[...new Set(events.map((event) => event.type))].map((type) => ({ value: type, label: type })),
 ];
 
-const areaFilterOptions = [
+const buildAreaFilterOptions = () => [
   { value: "all", label: "すべての地域" },
   ...[...new Set([...peers.filter((peer) => !peer.isMe), ...friends].map((item) => item.area))].map((area) => ({
     value: area,
@@ -235,10 +238,20 @@ const areaFilterOptions = [
   })),
 ];
 
-const eventAreaOptions = [
+const buildEventAreaOptions = () => [
   { value: "all", label: "すべての地域" },
   ...[...new Set(events.map((event) => event.place))].map((place) => ({ value: place, label: place })),
 ];
+
+let eventTypeOptions = buildEventTypeOptions();
+let areaFilterOptions = buildAreaFilterOptions();
+let eventAreaOptions = buildEventAreaOptions();
+
+const rebuildFilterOptions = () => {
+  eventTypeOptions = buildEventTypeOptions();
+  areaFilterOptions = buildAreaFilterOptions();
+  eventAreaOptions = buildEventAreaOptions();
+};
 
 const officialLinks = (links) => {
   if (!links) return "";
@@ -400,7 +413,7 @@ const friendCard = (friend) => `
         </span>
       </summary>
       <div class="detail-panel">
-        <h3>${escapeHtml(friend.interest)}</h3>
+        ${friend.interest ? `<h3>${escapeHtml(friend.interest)}</h3>` : ""}
         <div class="tag-row">${renderTags(friend.methods)}</div>
         <p>${escapeHtml(friend.note)}</p>
         <p class="rhythm-line"><strong>活動リズム：</strong>${escapeHtml(friend.rhythm)}</p>
@@ -1841,14 +1854,127 @@ app.addEventListener("click", (event) => {
   }
 });
 
+// ---- Supabase からの読み込み（P2-1）----
+// DBの行を、これまでの画面が期待する形に変換する。失敗時は mock-data のまま動く。
+const DB_WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+const isoToShortDate = (iso) => {
+  if (!iso) return "";
+  const [, month, day] = iso.split("-").map(Number);
+  return `${month}/${day}`;
+};
+const isoToWeekday = (iso) => {
+  const [year, month, day] = iso.split("-").map(Number);
+  return DB_WEEKDAYS[new Date(year, month - 1, day).getDay()];
+};
+
+const dbGroupToUi = (row) => ({
+  id: row.id,
+  displayName: row.display_name,
+  area: row.area,
+  status: row.stage,
+  methods: row.methods || [],
+  interest: (row.methods || [])[0] || "",
+  note: row.note,
+  activity: row.activity,
+  rhythm: row.rhythm,
+  welcome: row.welcome,
+  links: row.links || {},
+  photo: row.photo,
+  updates: (row.group_updates || [])
+    .slice()
+    .sort((a, b) => (a.published_on < b.published_on ? 1 : -1))
+    .map((item) => ({ date: isoToShortDate(item.published_on), title: item.title, text: item.body })),
+});
+
+const dbEventToUi = (row, counts, groupNames) => ({
+  id: row.id,
+  date: isoToShortDate(row.event_date),
+  day: isoToWeekday(row.event_date),
+  time: row.time_label,
+  title: row.title,
+  place: row.place,
+  areaNote: row.area_note,
+  description: row.description,
+  capacity: row.capacity ? `${row.capacity}名` : "",
+  attending: (row.attending_base || 0) + (counts?.joined_count || 0),
+  fee: row.fee,
+  deadline: isoToShortDate(row.deadline),
+  interestedCount: (row.interested_base || 0) + (counts?.interested_count || 0),
+  host: groupNames.get(row.group_id) || "",
+  hostGroupId: row.group_id,
+  type: row.event_type,
+  belongings: row.belongings,
+  note: row.note,
+  welcome: row.welcome,
+  rainPolicy: row.rain_policy,
+  schedule: row.schedule || [],
+  seedExchange: row.seed_exchange,
+  photo: row.photo,
+  relatedSeedIds: (row.event_seeds || []).map((link) => link.seed_id),
+  voices: (row.event_voices || []).map((voice) => ({ who: voice.who, text: voice.body })),
+});
+
+const dbSeedToUi = (row, eventLinks) => ({
+  id: row.id,
+  name: row.name,
+  aliases: row.aliases || [],
+  cropType: row.crop_type,
+  area: row.area,
+  lat: row.lat,
+  lng: row.lng,
+  sourceType: row.source_type,
+  sourceLabel: row.source_label,
+  sourceName: row.source_name,
+  sourceUrl: row.source_url,
+  descriptionShort: row.description_short,
+  dataConfidence: row.data_confidence,
+  locationNote: row.location_note,
+  photo: row.photo,
+  relatedGroupId: row.related_group_id,
+  relatedEventIds: eventLinks.get(row.id) || [],
+});
+
+const hydrateFromApi = async () => {
+  if (!window.NOU_API || !window.NOU_API.enabled) return false;
+  try {
+    const [groupRows, eventRows, seedRows, countRows] = await Promise.all([
+      window.NOU_API.fetchGroups(),
+      window.NOU_API.fetchEvents(),
+      window.NOU_API.fetchSeeds(),
+      window.NOU_API.fetchEventCounts(),
+    ]);
+    const counts = new Map(countRows.map((row) => [row.event_id, row]));
+    const groupNames = new Map(groupRows.map((row) => [row.id, row.display_name]));
+    const eventLinks = new Map();
+    eventRows.forEach((row) =>
+      (row.event_seeds || []).forEach((link) => {
+        if (!eventLinks.has(link.seed_id)) eventLinks.set(link.seed_id, []);
+        eventLinks.get(link.seed_id).push(row.id);
+      }),
+    );
+    friends = groupRows.map(dbGroupToUi);
+    events = eventRows.map((row) => dbEventToUi(row, counts.get(row.id), groupNames));
+    seeds = seedRows.map((row) => dbSeedToUi(row, eventLinks));
+    rebuildFilterOptions();
+    document.documentElement.dataset.source = "supabase";
+    return true;
+  } catch (error) {
+    console.warn("Supabaseからの読み込みに失敗したため、サンプルデータで表示します。", error);
+    return false;
+  }
+};
+
 window.addEventListener("hashchange", renderApp);
 window.addEventListener("DOMContentLoaded", () => {
   loadUi();
 
   if (!window.location.hash) {
     window.location.replace("#/home");
-    return;
+  } else {
+    renderApp();
   }
 
-  renderApp();
+  hydrateFromApi().then((ok) => {
+    if (ok) renderApp();
+  });
 });
