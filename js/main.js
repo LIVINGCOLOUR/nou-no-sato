@@ -478,7 +478,7 @@ const renderHome = () =>
           </picture>
         </div>
         <div class="hero-copy-panel">
-          <h2>自然農・家庭菜園の仲間と、地元でつながる。</h2>
+          <h2>自然な農業に関心がある仲間と、地元でつながる。</h2>
           <p>自然農や有機で家庭菜園をする人が、近くの仲間やイベントとゆるくつながる場所。売り買いではなく、地元の横のつながりを育てます。</p>
           <div class="hero-actions">
             <a class="button button-primary" href="#/events">近くのイベントを見る</a>
