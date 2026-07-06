@@ -479,7 +479,6 @@ const renderHome = () =>
         </div>
         <div class="hero-copy-panel">
           <h2>自然に寄り添う農法に関心がある仲間と、地元でつながる。</h2>
-          <p>自然農や有機などの自然に寄り添う農法で家庭菜園をする人が、近くの仲間やイベントとゆるくつながる場所。</p>
           <div class="hero-actions">
             <a class="button button-primary" href="#/events">近くのイベントを見る</a>
             <a class="button button-light" href="#/native-map">在来種マップを見る</a>
