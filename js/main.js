@@ -1,5 +1,5 @@
 const data = window.NOU_NO_SATO_DATA;
-const { events, friends, methods, notes, profile, routes, seeds, peers, onboarding } = data;
+const { events, friends, methods, notes, profile, routes, seeds, peers, onboarding, techniques } = data;
 
 const app = document.querySelector("#app");
 
@@ -77,6 +77,7 @@ const setPageTitle = (title) => {
 };
 
 const methodById = (id) => methods.find((method) => method.id === id);
+const techniqueById = (id) => techniques.find((technique) => technique.id === id);
 const eventById = (id) => events.find((event) => event.id === id);
 const seedById = (id) => seeds.find((seed) => seed.id === id);
 const groupById = (id) => friends.find((group) => group.id === id);
@@ -658,8 +659,86 @@ const renderLearn = () =>
         ${sectionHeading("note", "Compare", "比較表でまとめて見る", "ひとこと・考え方・入口・注意点・比較軸を一覧できます。")}
         ${methodCompareTable()}
       </section>
+
+      <section class="section-block">
+        ${sectionHeading("book", "Techniques", "技法を学ぶ", "どの農法の人にも役立つ、畑の手仕事。農法どうしの橋渡しにもなります。")}
+        <div class="method-board technique-board">
+          ${techniques
+            .map(
+              (technique) => `
+                <article class="method-card method-${technique.color}">
+                  <h3>${escapeHtml(technique.name)}</h3>
+                  <p>${escapeHtml(technique.tagline)}</p>
+                  <p class="method-entry"><strong>入口:</strong> ${escapeHtml(technique.entry)}</p>
+                  <a class="card-action" href="#/techniques/${technique.id}">詳しく見る</a>
+                </article>
+              `,
+            )
+            .join("")}
+        </div>
+      </section>
     `,
   });
+
+const renderTechniqueDetail = (id) => {
+  const technique = techniqueById(id);
+  if (!technique) return renderNotFound("技法が見つかりません", "#/learn");
+
+  const relatedMethods = (technique.relatedMethodIds || []).map(methodById).filter(Boolean);
+
+  return pageFrame({
+    eyebrow: "Technique Detail",
+    title: technique.name,
+    copy: "特定の農法に属さない、どの畑でも使える手仕事です。",
+    actions: `
+      ${backLink("#/learn", "学ぶへ戻る")}
+      <a class="button button-light" href="#/notes/new">記録してみる</a>
+    `,
+    body: `
+      <article class="detail-card method-detail method-${technique.color}">
+        <div class="detail-body">
+          <span class="privacy-note">農法を横断する技法</span>
+          <h2>ひとことで言うと</h2>
+          <p>${escapeHtml(technique.tagline)}</p>
+          <h2>試しやすい入口</h2>
+          <p>${escapeHtml(technique.entry)}</p>
+          <h2>くわしく知る</h2>
+          ${technique.detail.map((para) => `<p>${escapeHtml(para)}</p>`).join("")}
+          ${
+            technique.seedMapLink
+              ? `<div class="contribute-inline">
+                   <p>この手仕事が、地域の在来種・固定種を残してきました。あなたの地域の種も見てみませんか。</p>
+                   <div class="action-row">
+                     <a class="card-action card-action-inline" href="#/native-map">在来種マップを見る</a>
+                     <a class="card-action card-action-inline" href="#/native-map/contribute">種の情報を寄せる</a>
+                   </div>
+                 </div>`
+              : ""
+          }
+        </div>
+        <aside class="side-panel">
+          ${
+            relatedMethods.length
+              ? `<h3>つながる農法</h3>
+                 <ul class="source-list">
+                   ${relatedMethods.map((method) => `<li><a class="text-link" href="#/learn/${method.id}">${escapeHtml(method.name)}</a></li>`).join("")}
+                 </ul>`
+              : ""
+          }
+          ${
+            technique.links && technique.links.length
+              ? `<h3>出典・もっと学ぶ</h3>
+                 <ul class="source-list">
+                   ${technique.links.map((link) => `<li><a class="text-link" href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(link.label)} ↗</a></li>`).join("")}
+                 </ul>
+                 <p class="side-note">この解説は上記の公開情報を参考に、当サイトが要約したものです。</p>`
+              : ""
+          }
+        </aside>
+      </article>
+    `,
+  });
+};
 
 const renderMethodDetail = (id) => {
   const method = methodById(id);
@@ -797,7 +876,7 @@ const renderNativeMap = () =>
       <section class="section-block contribute-cta">
         <div>
           <h2>地域の種の情報を寄せる</h2>
-          <p>「うちの地域にこんな種がある」を、運営確認のうえで少しずつ地図に加えています。住民の方の知識が、このマップを育てます。</p>
+          <p>「うちの地域にこんな種がある」を、運営確認のうえで少しずつ地図に加えています。住民の方の知識が、このマップを育てます。種を自分でつなぐ方法は<a class="text-link" href="#/techniques/seed-saving">自家採種のページ</a>へ。</p>
         </div>
         <a class="button button-primary" href="#/native-map/contribute">情報提供する（運営確認つき）</a>
       </section>
@@ -1180,6 +1259,7 @@ const routeTable = {
   groups: (parts) => renderGroupDetail(parts[1]),
   events: (parts) => (parts[1] ? renderEventDetail(parts[1]) : renderEvents()),
   learn: (parts) => (parts[1] ? renderMethodDetail(parts[1]) : renderLearn()),
+  techniques: (parts) => (parts[1] ? renderTechniqueDetail(parts[1]) : renderLearn()),
   notes: (parts) => (parts[1] === "new" ? renderNoteForm() : renderNotes()),
   "native-map": (parts) => (parts[1] === "contribute" ? renderSeedContribute() : renderNativeMap()),
   "native-varieties": (parts) => renderSeedDetail(parts[1]),
@@ -1199,7 +1279,7 @@ const updateActiveNav = (rootRoute) => {
     const isActive =
       route === rootRoute ||
       (route === "members" && rootRoute === "groups") ||
-      (route === "learn" && (rootRoute === "native-map" || rootRoute === "native-varieties"));
+      (route === "learn" && (rootRoute === "native-map" || rootRoute === "native-varieties" || rootRoute === "techniques"));
 
     link.classList.toggle("is-active", isActive);
   });

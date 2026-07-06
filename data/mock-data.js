@@ -541,6 +541,82 @@ window.NOU_NO_SATO_DATA = {
     },
   ],
 
+  // 農法を横断する技法。どの農法の人にも役立つ中立コンテンツとして扱う。
+  techniques: [
+    {
+      id: "seed-saving",
+      name: "自家採種",
+      color: "straw",
+      tagline: "育てた野菜から種を採り、翌年へつなぐ。在来種・固定種を未来に残す手仕事。",
+      entry: "交雑しにくいマメ類やレタスなど、自家受粉しやすい野菜から始めやすいです。",
+      detail: [
+        "固定種・在来種は「種を採って蒔くと親と同じような姿に育つ」種類で、自家採種で代々つなぐことができます。一方、市販の種の多くを占めるF1品種（一代交配）は形や味が揃って育てやすい半面、採った種は親と同じ性質を受け継ぎません。どちらが良い・悪いではなく、性質の違いとして理解します。",
+        "採種の基本は、元気で「その品種らしい」株を母本として残すこと、アブラナ科など交雑しやすい野菜は距離や時期をずらすこと、実を完熟させてから採り、よく乾かして保存することです。地域で受け継がれてきた種はその土地の気候に合った性質を持つことがあり、在来種マップの野菜たちも、こうした手仕事で残されてきました。",
+      ],
+      relatedMethodIds: ["natural-farming", "fukuoka-natural-farming", "natural-cultivation"],
+      seedMapLink: true,
+      links: [
+        { label: "マイナビ農業「F1種とは？固定種との違い」", url: "https://agri.mynavi.jp/2023_04_28_224943/" },
+        { label: "SMART AGRI「種子の多様性を知ろう」", url: "https://smartagri-jp.com/management/1301" },
+        { label: "翔栄ファーム「固定種、在来種、F1種、原種の違い」", url: "https://syouei-farm.net/anzen/200728/" },
+      ],
+    },
+    {
+      id: "companion-plants",
+      name: "コンパニオンプランツ",
+      color: "leaf",
+      tagline: "相性のよい植物を近くに植え、虫や病気をやわらげ、生育を助け合う組み合わせの知恵。",
+      entry: "定番のミニトマト×バジル、ピーマン×ニラなど、2種類の寄せ植えから始めやすいです。",
+      detail: [
+        "香りの強いシソ科・セリ科・キク科の植物が苦手な虫を遠ざけたり、マメ科の根に住む根粒菌が空気中の窒素を固定して隣の作物を助けたり、花が受粉を手伝う虫を呼んだり——植物どうしの関係を活かす植え方です。",
+        "農薬に頼らずバランスを取る発想は、自然農の混植、協生農法の混生密生、パーマカルチャーの植物ギルドなど、多くの農法に通じます。まずひと組み合わせを試し、虫や生育の変化を記録すると違いが見えてきます。",
+      ],
+      relatedMethodIds: ["synecoculture", "permaculture", "natural-farming"],
+      seedMapLink: false,
+      links: [
+        { label: "マイナビ農業「コンパニオンプランツとは？」", url: "https://agri.mynavi.jp/2022_09_29_204782/" },
+        { label: "やまむファーム「コンパニオンプランツの組み合わせと効果」", url: "https://ymmfarm.com/cultivation/basis/companion-plants/" },
+        { label: "GardenStory「コンパニオンプランツにはどんな効果がある？」", url: "https://gardenstory.jp/gardening/83207" },
+      ],
+    },
+    {
+      id: "green-manure",
+      name: "緑肥",
+      color: "green",
+      tagline: "収穫しない作物を育てて土に返し、畑の力そのものを育てる方法。",
+      entry: "小さな区画にえん麦やクローバーを蒔き、育ったら刈って土に混ぜる（または敷く）ことから始めやすいです。",
+      detail: [
+        "えん麦やライ麦などイネ科の緑肥は深く根を張って土をほぐし、有機物を補います。クローバーやヘアリーベッチなどマメ科は、根に共生する根粒菌が空気中の窒素を固定して土を肥やします。刈ってすき込むほか、耕さない畑では刈って地表に敷く使い方もあります。",
+        "肥料を「外から買って入れる」のではなく「畑の中で育てる」発想で、有機農法の土づくりから、自然農の草を活かす考え方、炭素循環農法の資材づくりまで幅広くつながります。",
+      ],
+      relatedMethodIds: ["organic-farming", "natural-farming", "carbon-cycle"],
+      seedMapLink: false,
+      links: [
+        { label: "AGRI PICK「緑肥の種類と効果的な使い方」", url: "https://agripick.com/954" },
+        { label: "minorasu「緑肥とは？緑肥作物の種類と効果一覧」", url: "https://minorasu.basf.co.jp/80028" },
+        { label: "農研機構「緑肥利用マニュアル」（PDF）", url: "https://www.naro.go.jp/publicity_report/publication/files/ryokuhi_manual04_carc20200420.pdf" },
+      ],
+    },
+    {
+      id: "bokashi",
+      name: "ぼかし肥料づくり",
+      color: "soil",
+      tagline: "米ぬかなど身近な有機物を発酵させてつくる、手づくりの穏やかな肥料。",
+      entry: "米ぬかと油かすを混ぜ、水分40%ほどにして数週間発酵させる、小さな仕込みから始めやすいです。",
+      detail: [
+        "有機質資材をあらかじめ微生物に発酵・分解させておく肥料で、効き方が穏やかなのが特徴です（名前は肥効を「ぼかす」ことに由来するといわれます）。仕込んで数日で発熱が始まり、切り返しをしながら、夏なら10日前後、冬なら1か月ほどで味噌麹のような香りに変われば完成の目安です。",
+        "買う肥料を減らし、地域で出る米ぬかやもみ殻を活かせるのが魅力です。微生物を育てて畑に返す発想は、有機農法や菌ちゃん農法の入り口としても学びやすい技法です。",
+      ],
+      relatedMethodIds: ["organic-farming", "kinchan"],
+      seedMapLink: false,
+      links: [
+        { label: "みんなの農業広場「簡単！ぼかし肥の作り方（家庭菜園向け）」", url: "https://www.jeinou.com/benri/garden/2021/07/060915.html" },
+        { label: "有機農業をはじめよう！「ボカシ肥の作り方と使い方」", url: "https://yuki-hajimeru.net/?p=1033" },
+        { label: "やまむファーム「米ぬかボカシ肥の作り方と必要材料」", url: "https://ymmfarm.com/cultivation/tech/rice-bran-bokashi/" },
+      ],
+    },
+  ],
+
   notes: [
     {
       id: "n01",

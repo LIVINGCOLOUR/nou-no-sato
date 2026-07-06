@@ -120,7 +120,7 @@
   <p class="subtitle">自然農・在来種の地域コミュニティアプリ<br />Phase 1 静的UIプロトタイプ</p>
   <table>
     <tr><th>文書名</th><td>農の里 基本仕様書</td></tr>
-    <tr><th>版数</th><td>1.1（農法8種化・比較表・在来種マップ関東拡大を反映）</td></tr>
+    <tr><th>版数</th><td>1.2（農法8種化・比較表・在来種マップ関東拡大・技法カテゴリ新設を反映）</td></tr>
     <tr><th>作成日</th><td>2026年7月6日</td></tr>
     <tr><th>対象バージョン</th><td>main ブランチ（2026年7月6日 時点）</td></tr>
     <tr><th>リポジトリ</th><td>github.com/LIVINGCOLOUR/nou-no-sato</td></tr>
@@ -188,8 +188,9 @@
   <tr><td><code>#/groups/:id</code></td><td>団体詳細</td><td>活動リズム、歓迎メッセージ、「活動を受け取る」、季節の便り（読み取り専用）、団体のイベント、関わる在来種。</td></tr>
   <tr><td><code>#/events</code></td><td>イベント一覧</td><td>種別フィルタ、イベントカード（人気マーク・気になるトグル付き）。</td></tr>
   <tr><td><code>#/events/:id</code></td><td>イベント詳細</td><td>説明文を最上部に表示。開催情報（日時・地域＋詳細案内の補足・定員と参加予定・料金・申込締切・主催・持ち物）、気になるトグルと「◯人が気になる」、参加予定ボタン（デモ）、開催団体を見る（右下）、参加した人の声、関連在来種。</td></tr>
-  <tr><td><code>#/learn</code></td><td>農法を学ぶ</td><td>先頭に在来種マップへの導線、農法カード8種、全農法の比較表（ひとこと/考え方/入口/注意点/比較軸。横スクロール・先頭列固定）。</td></tr>
+  <tr><td><code>#/learn</code></td><td>農法を学ぶ</td><td>先頭に在来種マップへの導線、農法カード8種、全農法の比較表（ひとこと/考え方/入口/注意点/比較軸。横スクロール・先頭列固定）、技法カード4種。</td></tr>
   <tr><td><code>#/learn/:id</code></td><td>農法詳細</td><td>考え方・入口・注意点、成り立ち・提唱者、くわしい解説、比較軸（耕す/肥料/草/農薬）、出典・参考リンク（Web公開情報を当サイトが要約した旨を明記）。優劣づけしない前提の文言。</td></tr>
+  <tr><td><code>#/techniques/:id</code></td><td>技法詳細</td><td>農法を横断する技法（自家採種・コンパニオンプランツ・緑肥・ぼかし肥料づくり）。ひとこと・入口・解説・つながる農法・出典。自家採種は在来種マップ／情報提供へ相互リンク。</td></tr>
   <tr><td><code>#/notes</code></td><td>栽培記録一覧</td><td>非公開方針の信頼リスト、記入例カード（記入例であることを明示）。</td></tr>
   <tr><td><code>#/notes/new</code></td><td>栽培記録作成</td><td>作物・日付・ひとこと・写真（見た目のみ）の静的フォーム。保存なし。</td></tr>
   <tr><td><code>#/native-map</code></td><td>在来種マップ</td><td>Leaflet 地図（関東・福島、地域目安の円マーカー、出典確度で色分け）、在来種カード、情報提供CTA。</td></tr>
@@ -260,6 +261,7 @@
   <tr><td><code>friends</code></td><td>地域の団体・サークル</td><td>id, displayName, area, status, methods[], note, activity, rhythm（活動リズム）, welcome, links{website, instagram, sns}, updates[]（季節の便り）, eventId, photo</td></tr>
   <tr><td><code>events</code></td><td>運営登録イベント</td><td>id, date, day, time, title, place, areaNote, description, capacity, attending（参加予定数）, fee（料金）, deadline（申込締切）, interestedCount（気になる数）, host, hostGroupId, type, belongings, note, welcome, photo, relatedSeedIds[], voices[]（参加者の声）</td></tr>
   <tr><td><code>methods</code></td><td>農法（8種：自然農・自然栽培・有機農法・菌ちゃん農法・自然農法（福岡式）・パーマカルチャー・協生農法・炭素循環農法）</td><td>id, name, color, summary, entry, caution, perspective, founder（成り立ち・提唱者）, detail[]（解説段落）, links[]（出典・参考リンク）, values{tilling, fertilizer, grass, pesticide, beginner}</td></tr>
+  <tr><td><code>techniques</code></td><td>農法横断の技法（4種：自家採種・コンパニオンプランツ・緑肥・ぼかし肥料づくり）</td><td>id, name, color, tagline, entry, detail[], relatedMethodIds[], seedMapLink, links[]</td></tr>
   <tr><td><code>notes</code></td><td>栽培記録の記入例</td><td>id, date, crop, method, memo, learning, photo</td></tr>
   <tr><td><code>seeds</code></td><td>在来種・固定種（関東・福島 25件：茨城9・栃木2・群馬2・埼玉2・千葉2・東京3・神奈川2・福島3）</td><td>id, name, aliases[], cropType, area, lat, lng, sourceType（local_material / research_needed）, sourceLabel, sourceName, sourceUrl, descriptionShort, dataConfidence, locationNote, photo, relatedGroupId, relatedEventIds[]</td></tr>
   <tr><td><code>profile</code></td><td>マイページのサンプル</td><td>displayName, area, status, interests[], noteCount, upcomingEvents, favoriteMethod, privacy[]</td></tr>
