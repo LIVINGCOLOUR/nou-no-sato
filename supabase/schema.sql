@@ -42,7 +42,8 @@ create policy "profiles_update_own" on public.profiles
 -- =========================================================
 create table public.groups (
   id uuid primary key default gen_random_uuid(),
-  owner_id uuid not null references auth.users (id) on delete cascade,
+  -- デモ団体は所有者なしで投入する（実団体は申請時に必ず owner_id が付く）
+  owner_id uuid references auth.users (id) on delete cascade,
   display_name text not null,
   area text not null default '',
   stage text not null default '',
@@ -129,6 +130,10 @@ create table public.events (
   schedule jsonb not null default '[]', -- [{time,label}]
   seed_exchange boolean not null default false,
   photo text not null default 'photo-field',
+  -- デモ用の初期表示値。実ユーザーの操作数は user_event_actions / event_counts で数える。
+  -- Phase 2 が軌道に乗ったら 0 に戻すか列ごと削除する。
+  interested_base int not null default 0,
+  attending_base int not null default 0,
   status text not null default 'pending' check (status in ('pending', 'published', 'cancelled')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -275,6 +280,24 @@ create policy "seeds_select_published" on public.seeds
   for select using (published or public.is_admin());
 create policy "seeds_admin_write" on public.seeds
   for all using (public.is_admin());
+
+-- イベント⇔在来種の相互リンク
+create table public.event_seeds (
+  event_id uuid not null references public.events (id) on delete cascade,
+  seed_id text not null references public.seeds (id) on delete cascade,
+  primary key (event_id, seed_id)
+);
+
+alter table public.event_seeds enable row level security;
+create policy "event_seeds_select_all" on public.event_seeds
+  for select using (true);
+create policy "event_seeds_write_owner" on public.event_seeds
+  for all using (
+    exists (
+      select 1 from events e join groups g on g.id = e.group_id
+      where e.id = event_id and (g.owner_id = auth.uid() or public.is_admin())
+    )
+  );
 
 create table public.seed_contributions (
   id uuid primary key default gen_random_uuid(),
