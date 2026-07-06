@@ -84,6 +84,26 @@ const groupById = (id) => friends.find((group) => group.id === id);
 const eventsByGroup = (id) => events.filter((event) => event.hostGroupId === id);
 const seedsByGroup = (id) => seeds.filter((seed) => seed.relatedGroupId === id);
 
+// 種の交換会の約束事。販売にせず、種苗法（登録品種）に配慮した交換の場として運用する。
+const SEED_EXCHANGE_RULES = [
+  "在来種・固定種を中心に、自分で育てて採った種を少量ずつ持ち寄ります。",
+  "品種登録された品種（登録品種）の種苗は交換に出しません。種袋の表示などで確認します。",
+  "販売・出品の場ではありません。無償の交換・お裾分けとして行います。",
+  "「いつ・どこで・どう育てたか」の来歴をひとこと添えて渡します。",
+];
+
+const seedExchangeEvents = () => events.filter((event) => event.seedExchange);
+
+const seedExchangeRulesBlock = () => `
+  <div class="exchange-rules">
+    <h2>種の交換会の約束事</h2>
+    <ul class="check-list">
+      ${SEED_EXCHANGE_RULES.map((rule) => `<li>${escapeHtml(rule)}</li>`).join("")}
+    </ul>
+    <p class="form-help">種の背景は<a class="text-link" href="#/native-map">在来種マップ</a>で、種の採り方は<a class="text-link" href="#/techniques/seed-saving">自家採種のページ</a>で学べます。</p>
+  </div>
+`;
+
 const capacityNum = (event) => parseInt(event.capacity, 10) || 0;
 const isPopular = (event) => {
   const cap = capacityNum(event);
@@ -523,6 +543,7 @@ const renderEventDetail = (id) => {
             <div><dt>持ち物</dt><dd>${escapeHtml(event.belongings)}</dd></div>
           </dl>
           ${event.note ? `<p class="form-help">${escapeHtml(event.note)}</p>` : ""}
+          ${event.seedExchange ? seedExchangeRulesBlock() : ""}
           <div class="action-row">
             ${actionButton({ kind: "interested", id: event.id, on: "気になるに追加ずみ", off: "気になる" })}
             <button class="button button-primary" type="button">参加予定に入れる（デモ）</button>
@@ -736,6 +757,15 @@ const renderTechniqueDetail = (id) => {
           }
         </aside>
       </article>
+
+      ${
+        technique.seedMapLink && seedExchangeEvents().length
+          ? `<section class="section-block">
+              ${sectionHeading("calendar", "Seed Exchange", "種の交換会に行ってみる", "採った種を持ち寄り、来歴とともに交換する運営登録イベントです。")}
+              <div class="card-grid event-grid">${seedExchangeEvents().map((event) => eventCard(event)).join("")}</div>
+            </section>`
+          : ""
+      }
     `,
   });
 };
@@ -872,6 +902,15 @@ const renderNativeMap = () =>
         </div>
         <div class="card-grid compact-grid">${seeds.map(seedCard).join("")}</div>
       </div>
+
+      ${
+        seedExchangeEvents().length
+          ? `<section class="section-block">
+              ${sectionHeading("calendar", "Seed Exchange", "種の交換会に行ってみる", "地図で知った種と、実際に出会える場です。種がなくても参加できます。")}
+              <div class="card-grid event-grid">${seedExchangeEvents().map((event) => eventCard(event)).join("")}</div>
+            </section>`
+          : ""
+      }
 
       <section class="section-block contribute-cta">
         <div>
@@ -1198,6 +1237,7 @@ const renderManageEventForm = () =>
               <option>見学会</option>
               <option>交流会</option>
               <option>ワークショップ</option>
+              <option>種の交換会</option>
             </select>
           </label>
           <label>

@@ -161,6 +161,11 @@ window.NOU_NO_SATO_DATA = {
       },
       updates: [
         {
+          date: "7/1",
+          title: "夏の種の交換会をひらきます",
+          text: "自分で採った在来種・固定種の種を持ち寄る会です。種がない方の見学も歓迎。品種登録された品種は扱いません。",
+        },
+        {
           date: "6/18",
           title: "在来種の勉強会、参加受付中",
           text: "地域に残る種の話を聞く会です。種を持っていない方の見学も歓迎です。",
@@ -326,6 +331,34 @@ window.NOU_NO_SATO_DATA = {
       relatedSeedIds: ["yasato-zairai-daizu"],
       voices: [
         { who: "40代・プランター栽培", text: "落ち葉が土になる過程を見られて感動しました。" },
+      ],
+    },
+    {
+      id: "e06",
+      date: "8/2",
+      day: "日",
+      time: "13:30 - 15:30",
+      title: "夏の種の交換会",
+      place: "石岡市周辺",
+      areaNote: "詳細な場所は参加確定後にご案内",
+      description: "自分で育てて採った在来種・固定種の種を持ち寄り、来歴とともに交換します。種を持っていない方の見学・お裾分け参加も歓迎です。",
+      capacity: "20名",
+      attending: 9,
+      fee: "無料",
+      deadline: "7/30",
+      interestedCount: 13,
+      host: "やさとの土づくり仲間",
+      hostGroupId: "m02",
+      type: "種の交換会",
+      belongings: "交換したい種（あれば）、小分け用の袋、筆記用具",
+      note: "販売や出品の場ではありません。品種登録された品種の種苗は扱いません。",
+      welcome: "種がなくても大丈夫。見学だけ・もらうだけの参加も歓迎です。",
+      photo: "photo-map",
+      seedExchange: true,
+      relatedSeedIds: ["kaiji-takana", "yasato-zairai-daizu", "tanokuro-mame"],
+      voices: [
+        { who: "60代・畑あり", text: "祖母が育てていた豆と同じ種に出会えて感激しました。" },
+        { who: "30代・家庭菜園2年目", text: "来歴を聞きながらもらう種は、育てる気持ちが違います。" },
       ],
     },
   ],
@@ -703,7 +736,7 @@ window.NOU_NO_SATO_DATA = {
       locationNote: "位置は石岡市周辺の目安です。正確な圃場所在地ではありません。",
       photo: "photo-sprout",
       relatedGroupId: "m02",
-      relatedEventIds: ["e02", "e04"],
+      relatedEventIds: ["e02", "e04", "e06"],
     },
     {
       id: "satokawa-kabocha",
@@ -798,7 +831,7 @@ window.NOU_NO_SATO_DATA = {
       locationNote: "位置は石岡市八郷周辺の目安です。正確な圃場所在地ではありません。",
       photo: "photo-field",
       relatedGroupId: "m02",
-      relatedEventIds: ["e02", "e05"],
+      relatedEventIds: ["e02", "e05", "e06"],
     },
     {
       id: "tanokuro-mame",
@@ -817,7 +850,7 @@ window.NOU_NO_SATO_DATA = {
       locationNote: "位置は県央・県南周辺の目安です。正確な圃場所在地ではありません。",
       photo: "photo-map",
       relatedGroupId: "",
-      relatedEventIds: ["e04"],
+      relatedEventIds: ["e04", "e06"],
     },
     {
       id: "nissato-negi",

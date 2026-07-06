@@ -1883,6 +1883,28 @@ textarea {
   padding-top: 12px;
 }
 
+/* 種の交換会の約束事 */
+.exchange-rules {
+  margin-top: 14px;
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  border-left: 4px solid #c9a227;
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  background: linear-gradient(180deg, rgba(255, 247, 232, 0.9), rgba(255, 253, 247, 0.85));
+}
+
+.exchange-rules h2 {
+  margin-top: 0 !important;
+}
+
+.exchange-rules .check-list li::before {
+  background: #c9a227;
+}
+
+.exchange-rules .form-help {
+  margin: 12px 0 0;
+}
+
 .contribute-inline p {
   margin: 0 0 8px;
 }
