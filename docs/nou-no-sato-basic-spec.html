@@ -121,7 +121,7 @@
   <table>
     <tr><th>文書名</th><td>農の里（仮称）基本仕様書</td></tr>
     <tr><th>名称の扱い</th><td>「農の里」は仮称。正式名称は検討中（改称時はUI・文書の名称を一括更新する）。</td></tr>
-    <tr><th>版数</th><td>1.9（プロフィール編集画面の新設・栽培記録の管理機能＝統計/作物フィルタ/月別整理を反映）</td></tr>
+    <tr><th>版数</th><td>1.10（農法比較に機械・資材の2軸を追加、比較文言を差が見える言い切り表現に刷新）</td></tr>
     <tr><th>作成日</th><td>2026年7月6日</td></tr>
     <tr><th>対象バージョン</th><td>main ブランチ（2026年7月6日 時点）</td></tr>
     <tr><th>リポジトリ</th><td>github.com/LIVINGCOLOUR/nou-no-sato</td></tr>
@@ -189,8 +189,8 @@
   <tr><td><code>#/groups/:id</code></td><td>団体詳細</td><td>活動リズム、歓迎メッセージ、「活動を受け取る」、季節の便り（読み取り専用）、団体のイベント、関わる在来種。</td></tr>
   <tr><td><code>#/events</code></td><td>イベント一覧</td><td>種別＋地域の2段フィルタ、月別グルーピング（「7月（3件）」等の見出し）、イベントカード（開催ステータス・人気マーク・料金表示・気になるトグル付き）。開催済みは「開催済みのイベント」セクションに分離し、薄い表示＋「当日の様子・声を見る」リンクにする。</td></tr>
   <tr><td><code>#/events/:id</code></td><td>イベント詳細</td><td>説明文を最上部に表示。開催ステータスバッジ、開催情報（日時・地域＋詳細案内の補足・定員と参加予定・料金・申込締切・主催・持ち物・雨天時）、当日の流れ（タイムライン）、気になるトグルと「◯人が気になる」、参加予定トグル、開催団体を見る（右下）、参加した人の声、関連在来種。開催済みの場合は申込系ボタンの代わりに終了案内（主催団体ページへの誘導）を表示。末尾に「この団体のほかのイベント」（同一主催の開催予定を最大2件）。</td></tr>
-  <tr><td><code>#/learn</code></td><td>学ぶ</td><td>先頭に在来種マップへの導線、農法カード8種、全農法の比較表（ひとこと/考え方/入口/注意点/比較軸。横スクロール・先頭列固定）、技法カード4種。</td></tr>
-  <tr><td><code>#/learn/:id</code></td><td>農法詳細</td><td>考え方・入口・注意点、成り立ち・提唱者、くわしい解説、比較軸（耕す/肥料/草/農薬）、出典・参考リンク（Web公開情報を当サイトが要約した旨を明記）。優劣づけしない前提の文言。末尾に「この農法でつながる」（仲間ページを当該農法で絞り込んだ状態で開くリンク＋イベント一覧への導線。仲間フィルタにある農法のみ表示）。</td></tr>
+  <tr><td><code>#/learn</code></td><td>学ぶ</td><td>先頭に在来種マップへの導線、農法カード8種、全農法の比較表（ひとこと/考え方/入口/注意点/耕す/肥料/草/農薬/機械/資材。横スクロール・先頭列固定。差が見える言い切り表現で、優劣はつけない）、技法カード4種。</td></tr>
+  <tr><td><code>#/learn/:id</code></td><td>農法詳細</td><td>考え方・入口・注意点、成り立ち・提唱者、くわしい解説、比較軸（耕す/肥料/草/農薬/機械/資材）、出典・参考リンク（Web公開情報を当サイトが要約した旨を明記）。優劣づけしない前提の文言。末尾に「この農法でつながる」（仲間ページを当該農法で絞り込んだ状態で開くリンク＋イベント一覧への導線。仲間フィルタにある農法のみ表示）。</td></tr>
   <tr><td><code>#/techniques/:id</code></td><td>技法詳細</td><td>農法を横断する技法（自家採種・コンパニオンプランツ・緑肥・ぼかし肥料づくり）。ひとこと・入口・解説・つながる農法・出典。自家採種は在来種マップ／情報提供へ相互リンク。</td></tr>
   <tr><td><code>#/notes</code></td><td>栽培記録一覧</td><td>統計帯（記録数・作物数・学びメモ数）、非公開方針の信頼リスト、作物フィルタ、月別グルーピング（新しい月から）。記入例カードには「学び」も表示（記入例であることを明示）。</td></tr>
   <tr><td><code>#/notes/new</code></td><td>栽培記録作成</td><td>作物・日付・農法（選択）・ひとこと・うまくいったこと／学び・写真（見た目のみ）の静的フォーム。保存なし。</td></tr>
@@ -268,7 +268,7 @@
   <tr><td><code>peers</code></td><td>近くの個人（9件）</td><td>id, nickname, area, status, methods[], oneLiner, lookingFor, photo, isMe</td></tr>
   <tr><td><code>friends</code></td><td>地域の団体・サークル</td><td>id, displayName, area, status, methods[], note, activity, rhythm（活動リズム）, welcome, links{website, instagram, sns}, updates[]（季節の便り）, eventId, photo</td></tr>
   <tr><td><code>events</code></td><td>運営登録イベント（9件）</td><td>id, date, day, time, title, place, areaNote, description, capacity, attending（参加予定数）, fee（料金）, deadline（申込締切）, interestedCount（気になる数）, host, hostGroupId, type, belongings, note, welcome, rainPolicy（雨天時）, schedule[]（当日の流れ）, seedExchange（種の交換会フラグ）, photo, relatedSeedIds[], voices[]（参加者の声）</td></tr>
-  <tr><td><code>methods</code></td><td>農法（8種：自然農・自然栽培・有機農法・菌ちゃん農法・自然農法（福岡式）・パーマカルチャー・協生農法・炭素循環農法）</td><td>id, name, color, summary, entry, caution, perspective, founder（成り立ち・提唱者）, detail[]（解説段落）, links[]（出典・参考リンク）, values{tilling, fertilizer, grass, pesticide, beginner}</td></tr>
+  <tr><td><code>methods</code></td><td>農法（8種：自然農・自然栽培・有機農法・菌ちゃん農法・自然農法（福岡式）・パーマカルチャー・協生農法・炭素循環農法）</td><td>id, name, color, summary, entry, caution, perspective, founder（成り立ち・提唱者）, detail[]（解説段落）, links[]（出典・参考リンク）, values{tilling, fertilizer, grass, pesticide, machinery（機械）, materials（資材）, beginner}</td></tr>
   <tr><td><code>techniques</code></td><td>農法横断の技法（4種：自家採種・コンパニオンプランツ・緑肥・ぼかし肥料づくり）</td><td>id, name, color, tagline, entry, detail[], relatedMethodIds[], seedMapLink, links[]</td></tr>
   <tr><td><code>notes</code></td><td>栽培記録の記入例（7件・2026年5〜7月）</td><td>id, date, crop, method, memo, learning, photo</td></tr>
   <tr><td><code>seeds</code></td><td>在来種・固定種（関東・福島 25件：茨城9・栃木2・群馬2・埼玉2・千葉2・東京3・神奈川2・福島3）</td><td>id, name, aliases[], cropType, area, lat, lng, sourceType（local_material / research_needed）, sourceLabel, sourceName, sourceUrl, descriptionShort, dataConfidence, locationNote, photo, relatedGroupId, relatedEventIds[]</td></tr>

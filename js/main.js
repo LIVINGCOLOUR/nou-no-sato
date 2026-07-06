@@ -834,6 +834,8 @@ const methodCompareTable = () => `
           <th>肥料</th>
           <th>草</th>
           <th>農薬</th>
+          <th>機械</th>
+          <th>資材</th>
         </tr>
       </thead>
       <tbody>
@@ -850,6 +852,8 @@ const methodCompareTable = () => `
                 <td>${escapeHtml(method.values.fertilizer)}</td>
                 <td>${escapeHtml(method.values.grass)}</td>
                 <td>${escapeHtml(method.values.pesticide)}</td>
+                <td>${escapeHtml(method.values.machinery || "-")}</td>
+                <td>${escapeHtml(method.values.materials || "-")}</td>
               </tr>
             `,
           )
@@ -1010,6 +1014,8 @@ const renderMethodDetail = (id) => {
             <li><strong>肥料</strong>${escapeHtml(method.values.fertilizer)}</li>
             <li><strong>草</strong>${escapeHtml(method.values.grass)}</li>
             <li><strong>農薬</strong>${escapeHtml(method.values.pesticide)}</li>
+            ${method.values.machinery ? `<li><strong>機械</strong>${escapeHtml(method.values.machinery)}</li>` : ""}
+            ${method.values.materials ? `<li><strong>資材</strong>${escapeHtml(method.values.materials)}</li>` : ""}
           </ul>
           ${
             method.links && method.links.length
