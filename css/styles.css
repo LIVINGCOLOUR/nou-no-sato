@@ -2777,3 +2777,152 @@ button.note-delete {
   font-size: 0.92rem;
   color: var(--ink-soft, #4a5a43);
 }
+
+/* =========================================================
+   スマホの無駄スクロール削減（2026-07-07）
+   1画面目にコンテンツが入るよう、前置き・飾りを圧縮する
+   ========================================================= */
+@media (max-width: 700px) {
+  /* 英字だけの飾りラベル（REAL EVENTS等）は出さない。日本語の説明は残す */
+  .eyebrow-en {
+    display: none;
+  }
+
+  /* ページ冒頭の前置きを圧縮 */
+  .page-heading {
+    padding-top: 6px;
+    padding-bottom: 10px;
+  }
+
+  .page-heading h1 {
+    font-size: clamp(1.45rem, 6vw, 1.75rem);
+  }
+
+  .page-heading p:not(.eyebrow) {
+    margin-top: 6px;
+    font-size: 0.86rem;
+  }
+
+  .page-actions {
+    margin-top: 10px;
+  }
+
+  /* 戻るリンクに1行分の幅を占有させない（下部ナビでも移動できるため控えめに） */
+  .page-actions .back-link {
+    width: auto;
+    min-height: 36px;
+    justify-self: start;
+    padding: 6px 14px;
+    font-size: 0.88rem;
+  }
+
+  /* ホーム: ヘッダーの「農の里（仮称）」と重複するH1は出さず、ヒーローを1画面目に収める */
+  .home-view .page-heading h1 {
+    display: none;
+  }
+
+  .home-view .page-heading {
+    padding-bottom: 4px;
+  }
+
+  .hero-panel {
+    min-height: 300px;
+  }
+
+  .hero-copy-panel {
+    padding: 18px 14px;
+  }
+
+  .hero-copy-panel h2 {
+    font-size: clamp(1.34rem, 6vw, 1.62rem);
+  }
+
+  .hero-actions {
+    gap: 8px;
+  }
+
+  /* 方針3点は折り返さず1行の横スクロールに */
+  .trust-strip {
+    flex-wrap: nowrap;
+    gap: 14px;
+    overflow-x: auto;
+    margin-top: 12px;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+
+  .trust-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .trust-strip li {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  /* セクション間の余白と見出しを圧縮 */
+  .section-block {
+    padding-top: 20px;
+  }
+
+  .section-heading h2 {
+    font-size: 1.12rem;
+  }
+
+  .section-heading p {
+    font-size: 0.82rem;
+  }
+
+  .month-heading {
+    margin-bottom: 8px;
+    font-size: 1.12rem;
+  }
+
+  /* 安心材料（基本非公開など）はカード3枚の縦積み→1行ずつのコンパクト帯 */
+  .trust-list {
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .trust-list div {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 8px 12px;
+  }
+
+  .trust-list strong {
+    flex: 0 0 auto;
+    font-size: 0.84rem;
+  }
+
+  .trust-list span {
+    margin-top: 0;
+    font-size: 0.8rem;
+    line-height: 1.45;
+  }
+
+  /* 一覧のイベント説明は2行まで（全文は詳細ページで） */
+  .event-desc {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  /* 集計帯もひとまわり薄く */
+  .peer-band {
+    gap: 8px 12px;
+    padding: 10px 12px;
+  }
+
+  .peer-band strong {
+    font-size: 1.2rem;
+  }
+
+  /* 詳細ページの雰囲気写真は控えめにして、基本情報を1画面目に近づける */
+  .detail-visual {
+    min-height: 150px;
+    max-height: 190px;
+  }
+}

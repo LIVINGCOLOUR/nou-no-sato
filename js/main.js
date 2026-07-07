@@ -381,10 +381,13 @@ const officialLinks = (links) => {
   `;
 };
 
+// 英字だけの飾りラベルはスマホでは非表示にする（.eyebrow-en）。日本語の説明は残す。
+const isLatinLabel = (text) => /^[\x20-\x7E]+$/.test(text || "");
+
 const pageFrame = ({ eyebrow, title, copy, body, actions = "", tone = "" }) => `
   <section class="page ${tone}">
     <header class="page-heading">
-      <p class="eyebrow">${escapeHtml(eyebrow)}</p>
+      <p class="eyebrow${isLatinLabel(eyebrow) ? " eyebrow-en" : ""}">${escapeHtml(eyebrow)}</p>
       <h1>${escapeHtml(title)}</h1>
       ${copy ? `<p>${escapeHtml(copy)}</p>` : ""}
       ${actions ? `<div class="page-actions">${actions}</div>` : ""}
@@ -397,7 +400,7 @@ const sectionHeading = (icon, eyebrow, title, copy = "") => `
   <div class="section-heading compact-heading">
     <span class="section-number">${svgIcon(icon)}</span>
     <div>
-      <p class="eyebrow">${escapeHtml(eyebrow)}</p>
+      <p class="eyebrow${isLatinLabel(eyebrow) ? " eyebrow-en" : ""}">${escapeHtml(eyebrow)}</p>
       <h2>${escapeHtml(title)}</h2>
       ${copy ? `<p>${escapeHtml(copy)}</p>` : ""}
     </div>
@@ -454,7 +457,7 @@ const eventCard = (event, compact = false) => {
       <div>
         <h3>${escapeHtml(event.title)}</h3>
         <p class="event-line">${escapeHtml(event.place)}｜${escapeHtml(event.time)}｜定員${escapeHtml(event.capacity)}｜${escapeHtml(event.fee || "無料")}</p>
-        <p>${escapeHtml(event.description)}</p>
+        <p class="event-desc">${escapeHtml(event.description)}</p>
         <p class="event-host">主催：${escapeHtml(event.host)}</p>
       </div>
     </div>
@@ -2238,18 +2241,20 @@ const mountSeedMap = () => {
   requestAnimationFrame(() => seedMap && seedMap.invalidateSize());
 };
 
-const renderApp = () => {
+const renderApp = (options = {}) => {
   // ログインメールから戻った直後は #access_token=... が付く。supabase-js が処理するまで描画しない。
   if (window.location.hash && !window.location.hash.startsWith("#/")) return;
   const parts = getHashParts();
   const rootRoute = rootRouteFor(parts);
   const view = routeTable[rootRoute] ? routeTable[rootRoute](parts) : renderNotFound();
 
+  // 同じ画面の中の操作（削除・承認など）では読んでいた位置を保つ。ページ移動時は先頭へ。
+  const scrollTarget = options.preserveScroll ? window.scrollY : 0;
   app.innerHTML = view;
   updateActiveNav(rootRoute);
   setPageTitle(app.querySelector("h1")?.textContent ?? "");
-  window.scrollTo(0, 0);
-  requestAnimationFrame(() => window.scrollTo(0, 0));
+  window.scrollTo(0, scrollTarget);
+  requestAnimationFrame(() => window.scrollTo(0, scrollTarget));
   app.focus({ preventScroll: true });
 
   if (rootRoute === "native-map" && parts[1] !== "contribute") {
@@ -2453,7 +2458,7 @@ app.addEventListener("click", (event) => {
         await hydrateFromApi();
         await loadMyGroups();
         if (action !== "reload") manageNotice = "反映しました。";
-        renderApp();
+        renderApp({ preserveScroll: true });
       })
       .catch((error) => {
         console.warn("承認操作に失敗しました。", error);
@@ -2595,7 +2600,7 @@ app.addEventListener("click", (event) => {
     window.NOU_API.deleteNote(noteDelete.dataset.noteDelete)
       .then(async () => {
         await loadMyNotes();
-        renderApp();
+        renderApp({ preserveScroll: true });
       })
       .catch((error) => {
         console.warn("記録の削除に失敗しました。", error);
