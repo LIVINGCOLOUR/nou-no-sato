@@ -28,6 +28,35 @@ let session = null;
 let authEmailSent = false;
 const dbConnected = () => document.documentElement.dataset.source === "supabase";
 
+// 自分の栽培記録（P2-3）。null = 未ログアウトまたは未読込 → 記入例（mock）を表示。
+let myNotes = null;
+const activeNotes = () => myNotes ?? notes;
+const usingOwnNotes = () => myNotes !== null;
+
+const dbNoteToUi = (row) => ({
+  id: row.id,
+  date: (row.noted_on || "").replaceAll("-", "/"),
+  crop: row.crop,
+  method: row.method,
+  memo: row.memo,
+  learning: row.learning,
+  photo: row.photo || "photo-sprout",
+});
+
+const loadMyNotes = async () => {
+  if (!session || !dbConnected() || !window.NOU_API?.enabled) {
+    myNotes = null;
+    return;
+  }
+  try {
+    const rows = await window.NOU_API.fetchMyNotes(session.user.id);
+    myNotes = rows.map(dbNoteToUi);
+  } catch (error) {
+    console.warn("栽培記録の読み込みに失敗しました。", error);
+    myNotes = null;
+  }
+};
+
 const loadUi = () => {
   try {
     const raw = JSON.parse(localStorage.getItem(STORE_KEY) || "{}");
@@ -449,7 +478,7 @@ const methodCard = (method) => `
   </article>
 `;
 
-const noteCard = (note) => `
+const noteCard = (note, own = false) => `
   <article class="note-card">
     <div class="note-top">
       <div class="note-photo ${note.photo}" aria-hidden="true"></div>
@@ -460,10 +489,18 @@ const noteCard = (note) => `
     </div>
     ${note.learning ? `<p class="note-learning"><span>学び：</span>${escapeHtml(note.learning)}</p>` : ""}
     <div class="tag-row">
-      <span class="tag">${escapeHtml(note.method)}</span>
+      ${note.method ? `<span class="tag">${escapeHtml(note.method)}</span>` : ""}
       <span class="tag">非公開</span>
       <span class="tag">位置情報なし</span>
     </div>
+    ${
+      own
+        ? `<div class="action-row note-actions">
+            <a class="card-action card-action-inline" href="#/notes/edit/${note.id}">編集</a>
+            <button type="button" class="card-action card-action-inline note-delete" data-note-delete="${note.id}">削除</button>
+          </div>`
+        : ""
+    }
   </article>
 `;
 
@@ -1068,14 +1105,17 @@ const parseNoteDate = (text) => {
   return new Date(year, month - 1, day);
 };
 
-const noteCropOptions = [
+const buildNoteCropOptions = (list) => [
   { value: "all", label: "すべて" },
-  ...[...new Set(notes.map((note) => note.crop))].map((crop) => ({ value: crop, label: crop })),
+  ...[...new Set(list.map((note) => note.crop))].map((crop) => ({ value: crop, label: crop })),
 ];
 
 const renderNotes = () => {
+  const source = activeNotes();
+  const own = usingOwnNotes();
+  const noteCropOptions = buildNoteCropOptions(source);
   const crop = ui.noteCrop;
-  const list = notes
+  const list = source
     .filter((note) => crop === "all" || note.crop === crop)
     .sort((a, b) => (parseNoteDate(b.date) ?? 0) - (parseNoteDate(a.date) ?? 0));
 
@@ -1089,8 +1129,8 @@ const renderNotes = () => {
     else monthGroups.push({ label, notes: [note] });
   });
 
-  const cropCount = new Set(notes.map((note) => note.crop)).size;
-  const learningCount = notes.filter((note) => note.learning).length;
+  const cropCount = new Set(source.map((note) => note.crop)).size;
+  const learningCount = source.filter((note) => note.learning).length;
 
   return pageFrame({
     eyebrow: "Private Field Notes",
@@ -1099,10 +1139,14 @@ const renderNotes = () => {
     actions: `<a class="button button-primary" href="#/notes/new">新しく記録する</a>`,
     body: `
       <div class="peer-band">
-        <div><strong>${notes.length}</strong><span>記録</span></div>
+        <div><strong>${source.length}</strong><span>記録</span></div>
         <div><strong>${cropCount}</strong><span>作物</span></div>
         <div><strong>${learningCount}</strong><span>学びメモ</span></div>
-        <p class="peer-band-note">下の記録は記入例です。実際は自分の記録だけがここに並びます。</p>
+        <p class="peer-band-note">${
+          own
+            ? "あなたの記録です。他の人には一切表示されません。"
+            : "下の記録は記入例です。ログイン（マイページ）すると自分の記録を保存できます。"
+        }</p>
       </div>
       <div class="trust-list">
         <div><strong>基本非公開</strong><span>公開タイムラインはありません。</span></div>
@@ -1119,59 +1163,81 @@ const renderNotes = () => {
                 (group) => `
                   <section class="month-block">
                     <h2 class="month-heading">${escapeHtml(group.label)}<span>${group.notes.length}件</span></h2>
-                    <div class="card-grid compact-grid">${group.notes.map(noteCard).join("")}</div>
+                    <div class="card-grid compact-grid">${group.notes.map((note) => noteCard(note, own)).join("")}</div>
                   </section>
                 `,
               )
               .join("")
-          : `<p class="empty-note">この作物の記録はまだありません。「すべて」に戻すか、新しく記録してみましょう。</p>`
+          : own
+            ? `<p class="empty-note">まだ記録がありません。<a class="text-link" href="#/notes/new">最初の記録</a>を書いてみましょう。作物と日付とひとことだけで残せます。</p>`
+            : `<p class="empty-note">この作物の記録はまだありません。「すべて」に戻すか、新しく記録してみましょう。</p>`
       }
     `,
   });
 };
 
-const renderNoteForm = () =>
-  pageFrame({
-    eyebrow: "Create Field Note",
-    title: "栽培記録を書く",
-    copy: "作物・日付・ひとことだけで残せます。（デモのため保存はされません）",
+const renderNoteForm = (noteId = null) => {
+  const own = Boolean(session && dbConnected() && window.NOU_API?.enabled);
+  const editing = noteId ? (myNotes || []).find((note) => note.id === noteId) : null;
+  if (noteId && !editing) return renderNotFound("記録が見つかりません", "#/notes");
+
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const values = {
+    crop: editing ? editing.crop : own ? "" : "ミニトマト",
+    date: editing ? editing.date.replaceAll("/", "-") : todayIso,
+    method: editing ? editing.method : "自然農",
+    memo: editing ? editing.memo : own ? "" : "葉が少し黄色い。水やりの間隔を見直す。",
+    learning: editing ? editing.learning : own ? "" : "草マルチを厚くした畝は乾きにくい。",
+  };
+
+  return pageFrame({
+    eyebrow: editing ? "Edit Field Note" : "Create Field Note",
+    title: editing ? "栽培記録を編集" : "栽培記録を書く",
+    copy: own
+      ? "作物・日付・ひとことだけで残せます。保存した記録は自分にしか見えません。"
+      : "作物・日付・ひとことだけで残せます。（ログインすると実際に保存できます）",
     actions: backLink("#/notes", "栽培記録へ戻る"),
     body: `
       <div class="note-layout">
-        <form class="note-form" aria-label="栽培記録入力イメージ">
+        <form class="note-form" aria-label="栽培記録入力フォーム">
           <label>
             作物
-            <input type="text" value="ミニトマト" />
+            <input type="text" id="note-crop" value="${escapeHtml(values.crop)}" placeholder="ミニトマト" />
           </label>
           <label>
             日付
-            <input type="date" value="2026-06-21" />
+            <input type="date" id="note-date" value="${escapeHtml(values.date)}" />
           </label>
           <label>
             農法（任意）
-            <select>
-              ${methods.map((method) => `<option${method.name === "自然農" ? " selected" : ""}>${escapeHtml(method.name)}</option>`).join("")}
-              <option>その他・決めていない</option>
+            <select id="note-method">
+              ${methods.map((method) => `<option${method.name === values.method ? " selected" : ""}>${escapeHtml(method.name)}</option>`).join("")}
+              <option${values.method === "その他・決めていない" ? " selected" : ""}>その他・決めていない</option>
             </select>
           </label>
           <label>
             ひとこと
-            <textarea rows="4">葉が少し黄色い。水やりの間隔を見直す。</textarea>
+            <textarea rows="4" id="note-memo" placeholder="葉が少し黄色い。水やりの間隔を見直す。">${escapeHtml(values.memo)}</textarea>
           </label>
           <label>
             うまくいったこと・学び（任意）
-            <textarea rows="2">草マルチを厚くした畝は乾きにくい。</textarea>
+            <textarea rows="2" id="note-learning" placeholder="草マルチを厚くした畝は乾きにくい。">${escapeHtml(values.learning)}</textarea>
           </label>
           <label>
             写真を追加（任意）
-            <span class="fake-upload">写真を選ぶ見た目だけ</span>
+            <span class="fake-upload">写真は今後対応予定です</span>
           </label>
           <label class="toggle-line">
             <input type="checkbox" checked disabled />
             公開設定：非公開
           </label>
           <p class="form-help">この記録は自分だけに表示されます。正確な位置情報や詳細な畑住所は保存しません。</p>
-          <button class="button button-primary" type="button">保存する（ダミー）</button>
+          <p class="form-error" data-note-error hidden></p>
+          ${
+            own
+              ? `<button class="button button-primary" type="button" data-note-save${editing ? ` data-note-id="${editing.id}"` : ""}>保存する</button>`
+              : `<button class="button button-primary" type="button">保存する（ダミー・<a class="text-link" href="#/mypage">ログイン</a>で有効化）</button>`
+          }
         </form>
         <aside class="side-panel">
           <h3>記録の方針</h3>
@@ -1185,6 +1251,7 @@ const renderNoteForm = () =>
       </div>
     `,
   });
+};
 
 const renderNativeMap = () =>
   pageFrame({
@@ -1450,8 +1517,12 @@ const renderMyPage = () => {
           }
         </div>
         <div>
-          <h2>最近の栽培記録（記入例）</h2>
-          <div class="card-grid compact-grid">${notes.slice(0, 2).map(noteCard).join("")}</div>
+          <h2>最近の栽培記録${usingOwnNotes() ? "" : "（記入例）"}</h2>
+          ${
+            activeNotes().length
+              ? `<div class="card-grid compact-grid">${activeNotes().slice(0, 2).map((note) => noteCard(note)).join("")}</div>`
+              : `<p class="empty-note">まだ記録がありません。<a class="text-link" href="#/notes/new">最初の記録</a>からどうぞ。</p>`
+          }
         </div>
       </section>
     `,
@@ -1757,7 +1828,11 @@ const routeTable = {
   events: (parts) => (parts[1] ? renderEventDetail(parts[1]) : renderEvents()),
   learn: (parts) => (parts[1] ? renderMethodDetail(parts[1]) : renderLearn()),
   techniques: (parts) => (parts[1] ? renderTechniqueDetail(parts[1]) : renderLearn()),
-  notes: (parts) => (parts[1] === "new" ? renderNoteForm() : renderNotes()),
+  notes: (parts) => {
+    if (parts[1] === "new") return renderNoteForm();
+    if (parts[1] === "edit" && parts[2]) return renderNoteForm(parts[2]);
+    return renderNotes();
+  },
   "native-map": (parts) => (parts[1] === "contribute" ? renderSeedContribute() : renderNativeMap()),
   "native-varieties": (parts) => renderSeedDetail(parts[1]),
   mypage: (parts) => (parts[1] === "edit" ? renderProfileEdit() : renderMyPage()),
@@ -1874,6 +1949,60 @@ app.addEventListener("click", (event) => {
     }
     saveUi();
     persistActionToDb(kind, id, willOn);
+    return;
+  }
+
+  const noteSave = event.target.closest("[data-note-save]");
+  if (noteSave) {
+    const crop = (document.querySelector("#note-crop")?.value || "").trim();
+    const date = document.querySelector("#note-date")?.value || "";
+    const method = document.querySelector("#note-method")?.value || "";
+    const memo = (document.querySelector("#note-memo")?.value || "").trim();
+    const learning = (document.querySelector("#note-learning")?.value || "").trim();
+    const errorEl = document.querySelector("[data-note-error]");
+    if (!crop || !date) {
+      if (errorEl) {
+        errorEl.textContent = "作物と日付を入れてください。";
+        errorEl.hidden = false;
+      }
+      return;
+    }
+    noteSave.disabled = true;
+    const payload = { crop, noted_on: date, method, memo, learning };
+    const noteId = noteSave.dataset.noteId;
+    const task = noteId
+      ? window.NOU_API.updateNote(noteId, payload)
+      : window.NOU_API.createNote(session.user.id, payload);
+    task
+      .then(async () => {
+        await loadMyNotes();
+        window.location.hash = "#/notes";
+        renderApp();
+      })
+      .catch((error) => {
+        console.warn("記録の保存に失敗しました。", error);
+        noteSave.disabled = false;
+        if (errorEl) {
+          errorEl.textContent = "保存に失敗しました。少し待ってからもう一度お試しください。";
+          errorEl.hidden = false;
+        }
+      });
+    return;
+  }
+
+  const noteDelete = event.target.closest("[data-note-delete]");
+  if (noteDelete) {
+    if (!window.confirm("この記録を削除しますか？")) return;
+    noteDelete.disabled = true;
+    window.NOU_API.deleteNote(noteDelete.dataset.noteDelete)
+      .then(async () => {
+        await loadMyNotes();
+        renderApp();
+      })
+      .catch((error) => {
+        console.warn("記録の削除に失敗しました。", error);
+        noteDelete.disabled = false;
+      });
     return;
   }
 
@@ -2109,15 +2238,20 @@ window.addEventListener("DOMContentLoaded", async () => {
       if (session && !wasLoggedIn) {
         authEmailSent = false;
         await syncMyStateWithDb();
+        await loadMyNotes();
         // ログインメールから戻った直後はマイページへ案内する。
         if (!window.location.hash.startsWith("#/")) {
           window.location.replace("#/mypage");
           return;
         }
       }
+      if (!session) myNotes = null;
       renderApp();
     });
-    if (session) await syncMyStateWithDb();
+    if (session) {
+      await syncMyStateWithDb();
+      await loadMyNotes();
+    }
   }
 
   if (hydrated || session) renderApp();

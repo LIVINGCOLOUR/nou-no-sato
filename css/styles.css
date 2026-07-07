@@ -2705,3 +2705,23 @@ textarea {
 .auth-panel.is-signed-in {
   background: linear-gradient(180deg, rgba(223, 243, 255, 0.4), rgba(255, 253, 247, 0.9));
 }
+
+.form-error {
+  margin: 0;
+  border-radius: var(--radius);
+  padding: 9px 12px;
+  color: #8a2f12;
+  background: #ffe3d6;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.note-actions {
+  margin-top: 10px;
+}
+
+button.note-delete {
+  border-color: rgba(138, 47, 18, 0.25);
+  color: #8a2f12;
+  background: #fff;
+}

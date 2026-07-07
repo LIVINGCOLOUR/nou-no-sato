@@ -84,6 +84,29 @@
         if (error) throw error;
       }
     },
+    // P2-3: 栽培記録（RLSにより本人の行しか読み書きできない）
+    async fetchMyNotes(userId) {
+      const { data, error } = await client
+        .from("notes")
+        .select("*")
+        .eq("user_id", userId)
+        .order("noted_on", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    async createNote(userId, note) {
+      const { error } = await client.from("notes").insert({ user_id: userId, ...note });
+      if (error) throw error;
+    },
+    async updateNote(noteId, note) {
+      const { error } = await client.from("notes").update(note).eq("id", noteId);
+      if (error) throw error;
+    },
+    async deleteNote(noteId) {
+      const { error } = await client.from("notes").delete().eq("id", noteId);
+      if (error) throw error;
+    },
+
     async setFollow(userId, groupId, on) {
       if (on) {
         const { error } = await client.from("follows").upsert({ user_id: userId, group_id: groupId });
