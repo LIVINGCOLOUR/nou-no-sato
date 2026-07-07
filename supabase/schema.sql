@@ -37,6 +37,29 @@ create policy "profiles_insert_own" on public.profiles
 create policy "profiles_update_own" on public.profiles
   for update using (id = auth.uid());
 
+-- role の自己昇格を防ぐ（groups/events の status ガードと同様）。
+-- auth.uid() が null の経路（SQLエディタ・Management API・service_role）は
+-- 運営付与のために対象外。API経由の一般ユーザーは insert 時 user 固定、
+-- update での role 変更は拒否する。
+create or replace function public.guard_profile_role()
+returns trigger language plpgsql as $$
+begin
+  if auth.uid() is null or public.is_admin() then
+    return new;
+  end if;
+  if tg_op = 'INSERT' then
+    new.role := 'user';
+  elsif new.role is distinct from old.role then
+    raise exception 'role is managed by admin';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger profiles_guard_role
+  before insert or update on public.profiles
+  for each row execute function public.guard_profile_role();
+
 -- =========================================================
 -- 団体（承認制）
 -- =========================================================

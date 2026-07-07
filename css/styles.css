@@ -2770,3 +2770,10 @@ button.note-delete {
   background: rgba(255, 255, 255, 0.6);
   font-size: 0.88rem;
 }
+
+/* プロフィール編集の実保存: マイページのひとこと表示 */
+.profile-oneliner {
+  margin-top: 6px;
+  font-size: 0.92rem;
+  color: var(--ink-soft, #4a5a43);
+}

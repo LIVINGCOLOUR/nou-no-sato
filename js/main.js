@@ -928,7 +928,7 @@ const renderGroupDetail = (id) => {
           <div class="action-row">
             ${actionButton({ kind: "following", id: group.id, on: "活動を受け取り中", off: "活動を受け取る" })}
           </div>
-          <p class="form-help">「活動を受け取る」と、季節の便りや新しいイベントを見逃しにくくなります（デモ・通知処理はありません）。</p>
+          <p class="form-help">「活動を受け取る」と、この団体がマイページにまとまり、季節の便りや新しいイベントを見逃しにくくなります（メール等の通知はありません）。</p>
           <h2>公式リンク</h2>
           ${officialLinks(group.links) || "<p>公式リンクは未登録です。</p>"}
           <p class="form-help">公式リンクは団体自身が管理ページで登録したものです。第三者が勝手に登録することはできません。</p>
@@ -1527,6 +1527,22 @@ const authSection = () => {
 };
 
 const renderMyPage = () => {
+  const own = Boolean(session && dbConnected() && window.NOU_API?.enabled && myProfile);
+  const display = own
+    ? {
+        name: myProfile.nickname,
+        area: myProfile.area,
+        status: myProfile.stage,
+        interests: myProfile.interests || [],
+        oneLiner: myProfile.one_liner,
+      }
+    : {
+        name: profile.displayName,
+        area: profile.area,
+        status: profile.status,
+        interests: profile.interests,
+        oneLiner: "",
+      };
   const interestedEvents = events.filter((event) => ui.interested.has(event.id));
   const joinedEvents = events
     .filter((event) => ui.joined.has(event.id))
@@ -1544,14 +1560,16 @@ const renderMyPage = () => {
     `,
     body: `
       ${authSection()}
-      <p class="form-help">これはデモ用の表示です。実際は、あなた自身の関心・気になる・記録がここに表示されます。</p>
+      ${manageNoticeBlock()}
+      ${own ? "" : `<p class="form-help">これはデモ用の表示です。実際は、あなた自身の関心・気になる・記録がここに表示されます。</p>`}
       <section class="profile-panel">
         <div class="profile-main">
           <div class="avatar-placeholder" aria-hidden="true"></div>
           <div>
-            <p class="profile-name">${escapeHtml(profile.displayName)}<span class="sample-tag">サンプル</span></p>
-            <p>${escapeHtml(profile.area)}｜${escapeHtml(profile.status)}</p>
-            <div class="tag-row">${renderTags(profile.interests)}</div>
+            <p class="profile-name">${escapeHtml(display.name)}${own ? "" : `<span class="sample-tag">サンプル</span>`}</p>
+            <p>${escapeHtml(display.area || "地域未設定")}｜${escapeHtml(display.status)}</p>
+            <div class="tag-row">${renderTags(display.interests)}</div>
+            ${display.oneLiner ? `<p class="profile-oneliner">${escapeHtml(display.oneLiner)}</p>` : ""}
           </div>
         </div>
         <dl class="stats-grid">
@@ -1619,28 +1637,48 @@ const renderMyPage = () => {
 };
 
 const renderProfileEdit = () => {
+  const own = Boolean(session && dbConnected() && window.NOU_API?.enabled && myProfile);
   const stages = ["はじめたばかり", "プランター栽培", "家庭菜園中", "家庭菜園3年目以上", "畑あり"];
   const interestChoices = ["自然農", "自然栽培", "有機農法", "菌ちゃん農法", "在来種に関心"];
+  const values = own
+    ? {
+        nickname: myProfile.nickname || "",
+        area: myProfile.area || "",
+        stage: myProfile.stage || stages[0],
+        interests: myProfile.interests || [],
+        oneLiner: myProfile.one_liner || "",
+        lookingFor: myProfile.looking_for || "",
+      }
+    : {
+        nickname: "のうこ",
+        area: profile.area,
+        stage: profile.status,
+        interests: profile.interests,
+        oneLiner: "プランターから畝へ。失敗も記録して楽しんでいます。",
+        lookingFor: "近所でゆるく情報交換できる人",
+      };
   return pageFrame({
     eyebrow: "Edit Profile",
     title: "プロフィールを編集",
-    copy: "仲間探しに表示される内容を整えます。（デモのため保存はされません）",
+    copy: own
+      ? "仲間探しに表示される内容を整えます。"
+      : "仲間探しに表示される内容を整えます。（保存には、マイページからのログインが必要です）",
     actions: backLink("#/mypage", "マイページへ戻る"),
     body: `
       <div class="note-layout">
-        <form class="note-form" aria-label="プロフィール入力イメージ">
+        <form class="note-form" aria-label="プロフィール入力フォーム">
           <label>
             ニックネーム
-            <input type="text" value="のうこ" />
+            <input type="text" id="p-nickname" maxlength="30" value="${escapeHtml(values.nickname)}" />
           </label>
           <label>
             地域（市町村程度）
-            <input type="text" value="${escapeHtml(profile.area)}" />
+            <input type="text" id="p-area" value="${escapeHtml(values.area)}" placeholder="例：笠間市" />
           </label>
           <label>
             いまのステージ
-            <select>
-              ${stages.map((stage) => `<option${stage === profile.status ? " selected" : ""}>${escapeHtml(stage)}</option>`).join("")}
+            <select id="p-stage">
+              ${stages.map((stage) => `<option${stage === values.stage ? " selected" : ""}>${escapeHtml(stage)}</option>`).join("")}
             </select>
           </label>
           <div class="field">
@@ -1649,25 +1687,26 @@ const renderProfileEdit = () => {
               ${interestChoices
                 .map(
                   (choice) =>
-                    `<label><input type="checkbox"${profile.interests.includes(choice) ? " checked" : ""} /> ${escapeHtml(choice)}</label>`,
+                    `<label><input type="checkbox" name="p-interest" value="${escapeHtml(choice)}"${values.interests.includes(choice) ? " checked" : ""} /> ${escapeHtml(choice)}</label>`,
                 )
                 .join("")}
             </span>
           </div>
           <label>
             ひとこと（畑の様子・いまの気分）
-            <input type="text" value="プランターから畝へ。失敗も記録して楽しんでいます。" />
+            <input type="text" id="p-oneliner" value="${escapeHtml(values.oneLiner)}" />
           </label>
           <label>
             さがしている
-            <input type="text" value="近所でゆるく情報交換できる人" />
-          </label>
-          <label>
-            アイコン画像（任意）
-            <span class="fake-upload">画像を選ぶ見た目だけ</span>
+            <input type="text" id="p-looking" value="${escapeHtml(values.lookingFor)}" />
           </label>
           <p class="form-help">仲間探しに表示されるのは、ニックネーム・市町村程度の地域・ステージ・関心・ひとことだけです。本名・連絡先・詳細住所は登録できません。</p>
-          <button class="button button-primary" type="button">保存する（ダミー）</button>
+          <p class="form-error" data-profile-error hidden></p>
+          ${
+            own
+              ? `<button class="button button-primary" type="button" data-profile-save>保存する</button>`
+              : `<button class="button button-primary" type="button" disabled>保存する（ログインが必要）</button>`
+          }
         </form>
         <aside class="side-panel">
           <h3>公開範囲</h3>
@@ -1695,9 +1734,9 @@ const renderNotFound = (message = "画面が見つかりません", href = "#/ho
 
 const renderManageHome = () =>
   pageFrame({
-    eyebrow: "団体向け管理（デモ）",
+    eyebrow: "団体向け管理",
     title: "団体メニュー",
-    copy: "承認された団体・活動者が、自分たちのプロフィールとイベントを登録・編集する画面です。（デモのため、ログインや保存処理はありません）",
+    copy: "団体・活動者が、自分たちのプロフィールとイベントを登録・編集する画面です。新規の団体は申請後、運営の審査を経て掲載されます。",
     actions: backLink("#/members", "仲間一覧へ戻る"),
     body: `
       ${manageNoticeBlock()}
@@ -2419,6 +2458,44 @@ app.addEventListener("click", (event) => {
       .catch((error) => {
         console.warn("承認操作に失敗しました。", error);
         adminButton.disabled = false;
+      });
+    return;
+  }
+
+  const profileSave = event.target.closest("[data-profile-save]");
+  if (profileSave) {
+    const errorEl = document.querySelector("[data-profile-error]");
+    const nickname = (document.querySelector("#p-nickname")?.value || "").trim();
+    if (!nickname) {
+      if (errorEl) {
+        errorEl.textContent = "ニックネームを入れてください。";
+        errorEl.hidden = false;
+      }
+      return;
+    }
+    profileSave.disabled = true;
+    window.NOU_API.upsertProfile({
+      id: session.user.id,
+      nickname,
+      area: (document.querySelector("#p-area")?.value || "").trim(),
+      stage: document.querySelector("#p-stage")?.value || "はじめたばかり",
+      interests: [...document.querySelectorAll('input[name="p-interest"]:checked')].map((el) => el.value),
+      one_liner: (document.querySelector("#p-oneliner")?.value || "").trim(),
+      looking_for: (document.querySelector("#p-looking")?.value || "").trim(),
+    })
+      .then(async () => {
+        await loadMyProfile();
+        manageNotice = "プロフィールを保存しました。";
+        window.location.hash = "#/mypage";
+        renderApp();
+      })
+      .catch((error) => {
+        console.warn("プロフィールの保存に失敗しました。", error);
+        profileSave.disabled = false;
+        if (errorEl) {
+          errorEl.textContent = "保存に失敗しました。少し待ってからもう一度お試しください。";
+          errorEl.hidden = false;
+        }
       });
     return;
   }
