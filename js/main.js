@@ -28,6 +28,63 @@ let session = null;
 let authEmailSent = false;
 const dbConnected = () => document.documentElement.dataset.source === "supabase";
 
+// 管理画面の一時メッセージ（1回表示したら消える）
+let manageNotice = "";
+const manageNoticeBlock = () => {
+  if (!manageNotice) return "";
+  const text = manageNotice;
+  manageNotice = "";
+  return `<p class="welcome-banner">${escapeHtml(text)}</p>`;
+};
+
+// 「時刻 内容」を / か改行区切りで書いたテキストを schedule 配列にする。
+const parseScheduleText = (text) =>
+  (text || "")
+    .split(/\r?\n|\/|／/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const match = line.match(/^(\S{1,7})\s+(.+)$/);
+      return match ? { time: match[1], label: match[2] } : { time: "", label: line };
+    });
+
+// 自分のプロフィールと団体（P2-4）
+let myProfile = null;
+let myGroups = null;
+const isAdmin = () => myProfile?.role === "admin";
+const myApprovedGroup = () => (myGroups || []).find((group) => group.status === "approved") || null;
+
+const loadMyProfile = async () => {
+  if (!session || !dbConnected() || !window.NOU_API?.enabled) {
+    myProfile = null;
+    return;
+  }
+  try {
+    myProfile = await window.NOU_API.fetchMyProfile(session.user.id);
+    if (!myProfile) {
+      const nickname = (session.user.email || "").split("@")[0].slice(0, 30) || "メンバー";
+      await window.NOU_API.upsertProfile({ id: session.user.id, nickname });
+      myProfile = await window.NOU_API.fetchMyProfile(session.user.id);
+    }
+  } catch (error) {
+    console.warn("プロフィールの読み込みに失敗しました。", error);
+    myProfile = null;
+  }
+};
+
+const loadMyGroups = async () => {
+  if (!session || !dbConnected() || !window.NOU_API?.enabled) {
+    myGroups = null;
+    return;
+  }
+  try {
+    myGroups = await window.NOU_API.fetchMyGroups(session.user.id);
+  } catch (error) {
+    console.warn("団体情報の読み込みに失敗しました。", error);
+    myGroups = null;
+  }
+};
+
 // 自分の栽培記録（P2-3）。null = 未ログアウトまたは未読込 → 記入例（mock）を表示。
 let myNotes = null;
 const activeNotes = () => myNotes ?? notes;
@@ -1611,6 +1668,7 @@ const renderManageHome = () =>
     copy: "承認された団体・活動者が、自分たちのプロフィールとイベントを登録・編集する画面です。（デモのため、ログインや保存処理はありません）",
     actions: backLink("#/members", "仲間一覧へ戻る"),
     body: `
+      ${manageNoticeBlock()}
       <div class="route-grid">
         <a class="route-card" href="#/manage/group">
           <span class="route-icon">${svgIcon("users")}</span>
@@ -1627,6 +1685,35 @@ const renderManageHome = () =>
           </span>
         </a>
       </div>
+      ${
+        session && dbConnected() && (myGroups || []).length
+          ? `<section class="section-block">
+              ${sectionHeading("users", "My Group", "あなたの団体")}
+              ${(myGroups || [])
+                .map((group) => {
+                  const status = GROUP_STATUS_LABELS[group.status] || GROUP_STATUS_LABELS.pending;
+                  return `<p class="badge-row"><strong>${escapeHtml(group.display_name)}</strong>　<span class="tag ${status.cls}">${escapeHtml(status.label)}</span></p>`;
+                })
+                .join("")}
+            </section>`
+          : ""
+      }
+
+      ${
+        session && isAdmin()
+          ? `<section class="section-block">
+              ${sectionHeading("shield", "Admin", "運営メニュー")}
+              <a class="route-card" href="#/manage/admin">
+                <span class="route-icon">${svgIcon("shield")}</span>
+                <span>
+                  <h3>承認キューを見る</h3>
+                  <p>団体の承認・イベントの公開・却下を行います（運営のみ表示されています）。</p>
+                </span>
+              </a>
+            </section>`
+          : ""
+      }
+
       <section class="section-block">
         ${sectionHeading("book", "How to Join", "新規登録の流れ", "これから掲載を始める団体・活動者の方へ。")}
         <div class="trust-list">
@@ -1640,75 +1727,104 @@ const renderManageHome = () =>
     `,
   });
 
-const renderManageGroup = () =>
-  pageFrame({
-    eyebrow: "団体向け管理（デモ）",
+const GROUP_STATUS_LABELS = {
+  pending: { label: "運営の承認待ち", cls: "tag-status-urgent" },
+  approved: { label: "掲載中", cls: "tag-status-open" },
+  rejected: { label: "今回は掲載を見送りました", cls: "tag-status-past" },
+};
+
+const renderManageGroup = () => {
+  const signedIn = Boolean(session && dbConnected() && window.NOU_API?.enabled);
+  const group = (myGroups || [])[0] || null;
+  const canSave = signedIn;
+  const v = {
+    name: group ? group.display_name : canSave ? "" : "小さな畝の会",
+    area: group ? group.area : canSave ? "" : "笠間市",
+    methods: group ? group.methods || [] : ["自然農"],
+    stage: group ? group.stage : canSave ? "" : "自然農に興味あり / 家庭菜園1年目",
+    note: group ? group.note : canSave ? "" : "小さな畝で葉物から始めています。草を全部抜かず、様子を見ながら続けています。",
+    activity: group ? group.activity : canSave ? "" : "月1回の観察会を開催",
+    rhythm: group ? group.rhythm : canSave ? "" : "毎月 第4日曜・午前",
+    welcome: group ? group.welcome : canSave ? "" : "はじめての方の見学・途中参加・見るだけ参加を歓迎しています。",
+    website: group ? group.links?.website || "" : canSave ? "" : "https://example.com/konaune-no-kai",
+    instagram: group ? group.links?.instagram || "" : "",
+    sns: group ? group.links?.sns || "" : "",
+  };
+  const status = group ? GROUP_STATUS_LABELS[group.status] : null;
+
+  return pageFrame({
+    eyebrow: "団体向け管理",
     title: "団体プロフィール登録・編集",
-    copy: "「仲間を探す」に表示される団体情報を登録・編集する静的フォームです。保存処理はありません。",
+    copy: "「仲間を探す」に表示される団体情報を登録・編集します。新規の掲載は運営の承認後に始まります。",
     actions: backLink("#/manage", "団体メニューへ戻る"),
     body: `
+      ${manageNoticeBlock()}
+      ${!signedIn ? `<p class="form-help">団体を申請するには、<a class="text-link" href="#/mypage">マイページからログイン</a>してください。</p>` : ""}
+      ${status ? `<p class="badge-row"><span class="tag ${status.cls}">${escapeHtml(status.label)}</span></p>` : ""}
       <div class="note-layout">
-        <form class="note-form" aria-label="団体プロフィール入力イメージ">
+        <form class="note-form" aria-label="団体プロフィール入力フォーム">
           <label>
             団体・活動者名
-            <input type="text" value="小さな畝の会" />
+            <input type="text" id="g-name" value="${escapeHtml(v.name)}" placeholder="例：小さな畝の会" />
           </label>
           <label>
             活動地域（市町村程度）
-            <input type="text" value="笠間市" />
+            <input type="text" id="g-area" value="${escapeHtml(v.area)}" placeholder="例：笠間市" />
           </label>
           <div class="field">
             <span class="field-label">主な農法</span>
             <span class="choice-row">
-              <label><input type="checkbox" checked /> 自然農</label>
-              <label><input type="checkbox" /> 自然栽培</label>
-              <label><input type="checkbox" /> 有機農法</label>
-              <label><input type="checkbox" /> 菌ちゃん農法</label>
+              ${["自然農", "自然栽培", "有機農法", "菌ちゃん農法"]
+                .map(
+                  (name) =>
+                    `<label><input type="checkbox" name="g-method" value="${name}"${v.methods.includes(name) ? " checked" : ""} /> ${name}</label>`,
+                )
+                .join("")}
             </span>
           </div>
           <label>
             ひとこと・関心
-            <input type="text" value="自然農に興味あり / 家庭菜園1年目" />
+            <input type="text" id="g-stage" value="${escapeHtml(v.stage)}" placeholder="例：自然農を実践中" />
           </label>
           <label>
             活動の紹介
-            <textarea rows="3">小さな畝で葉物から始めています。草を全部抜かず、様子を見ながら続けています。</textarea>
+            <textarea rows="3" id="g-note">${escapeHtml(v.note)}</textarea>
           </label>
           <label>
             活動内容
-            <input type="text" value="月1回の観察会を開催" />
+            <input type="text" id="g-activity" value="${escapeHtml(v.activity)}" placeholder="例：月1回の観察会を開催" />
           </label>
           <label>
             活動リズム
-            <input type="text" value="毎月 第4日曜・午前" />
+            <input type="text" id="g-rhythm" value="${escapeHtml(v.rhythm)}" placeholder="例：毎月 第4日曜・午前" />
           </label>
           <label>
             歓迎メッセージ（任意）
-            <input type="text" value="はじめての方の見学・途中参加・見るだけ参加を歓迎しています。" />
+            <input type="text" id="g-welcome" value="${escapeHtml(v.welcome)}" />
           </label>
-          <label>
-            季節の便りを届ける（任意）
-            <textarea rows="3" placeholder="例：雨続きで草の伸びが早いです。観察会では残す草と刈る草の見分けをやります。"></textarea>
-          </label>
-          <p class="form-help">便りは「活動を受け取る」を押した人に一方向で届く読み取り専用のお知らせです。返信・コメント機能はありません。</p>
           <label>
             公式サイトURL（任意）
-            <input type="url" value="https://example.com/konaune-no-kai" />
+            <input type="url" id="g-website" value="${escapeHtml(v.website)}" placeholder="https://" />
           </label>
           <label>
             Instagram（任意）
-            <input type="url" value="https://example.com/ig/konaune" />
+            <input type="url" id="g-instagram" value="${escapeHtml(v.instagram)}" placeholder="https://" />
           </label>
           <label>
             その他公式SNS（任意）
-            <input type="url" value="" placeholder="https://" />
+            <input type="url" id="g-sns" value="${escapeHtml(v.sns)}" placeholder="https://" />
           </label>
           <label>
             ロゴ・写真（任意）
-            <span class="fake-upload">画像を選ぶ見た目だけ</span>
+            <span class="fake-upload">写真は今後対応予定です</span>
           </label>
           <p class="form-help">公開されるのは市町村程度の地域までです。詳細住所・個人の連絡先は登録・表示しません。</p>
-          <button class="button button-primary" type="button">保存する（ダミー）</button>
+          <p class="form-error" data-group-error hidden></p>
+          ${
+            canSave
+              ? `<button class="button button-primary" type="button" data-group-save${group ? ` data-group-id="${group.id}"` : ""}>${group ? "保存する" : "申請する（運営審査へ）"}</button>`
+              : `<button class="button button-primary" type="button" disabled>申請する（ログインが必要）</button>`
+          }
         </form>
         <aside class="side-panel">
           <h3>登録の方針</h3>
@@ -1721,29 +1837,63 @@ const renderManageGroup = () =>
           </div>
         </aside>
       </div>
+      ${
+        group && group.status === "approved"
+          ? `<section class="section-block">
+              ${sectionHeading("note", "Notice", "季節の便りを届ける", "「活動を受け取る」を押した人に一方向で届きます。返信・コメント機能はありません。")}
+              <form class="note-form update-form" aria-label="季節の便り投稿フォーム">
+                <label>
+                  タイトル
+                  <input type="text" id="u-title" placeholder="例：梅雨の草の便り" />
+                </label>
+                <label>
+                  本文
+                  <textarea rows="3" id="u-body" placeholder="例：雨続きで草の伸びが早いです。観察会では残す草と刈る草の見分けをやります。"></textarea>
+                </label>
+                <p class="form-error" data-update-error hidden></p>
+                <button class="button button-primary" type="button" data-update-send data-group-id="${group.id}">この内容で届ける</button>
+              </form>
+            </section>`
+          : ""
+      }
     `,
   });
+};
 
-const renderManageEventForm = () =>
-  pageFrame({
-    eyebrow: "団体向け管理（デモ）",
+const renderManageEventForm = () => {
+  const signedIn = Boolean(session && dbConnected() && window.NOU_API?.enabled);
+  const group = myApprovedGroup();
+  const canSave = signedIn && group;
+
+  const gate = !signedIn
+    ? `<p class="form-help">イベントを登録するには、<a class="text-link" href="#/mypage">マイページからログイン</a>してください。</p>`
+    : !group
+      ? `<p class="form-help">イベントを登録できるのは承認済み団体のみです。まず<a class="text-link" href="#/manage/group">団体プロフィールを申請</a>し、運営の承認をお待ちください。</p>`
+      : "";
+
+  return pageFrame({
+    eyebrow: "団体向け管理",
     title: "イベント登録",
-    copy: "団体が新しいイベントを登録する静的フォームです。保存処理はありません。実際の登録は承認済み団体のみ可能です。",
+    copy: canSave
+      ? "登録したイベントは運営の確認後に公開されます。"
+      : "団体が新しいイベントを登録するフォームです。登録は承認済み団体のみ可能です。",
     actions: backLink("#/manage", "団体メニューへ戻る"),
     body: `
+      ${manageNoticeBlock()}
+      ${gate}
       <div class="note-layout">
-        <form class="note-form" aria-label="イベント登録入力イメージ">
+        <form class="note-form" aria-label="イベント登録フォーム">
           <div class="field">
             <span class="field-label">開催団体</span>
-            <span class="static-field">小さな畝の会（ログイン中の団体）</span>
+            <span class="static-field">${escapeHtml(group ? group.display_name : "小さな畝の会（サンプル表示）")}</span>
           </div>
           <label>
             イベント名
-            <input type="text" value="里山の草取りと観察会" />
+            <input type="text" id="e-title" value="${canSave ? "" : "里山の草取りと観察会"}" placeholder="例：夏の畑の観察会" />
           </label>
           <label>
             種別
-            <select>
+            <select id="e-type">
               <option>観察会</option>
               <option>勉強会</option>
               <option>見学会</option>
@@ -1754,62 +1904,67 @@ const renderManageEventForm = () =>
           </label>
           <label>
             日付
-            <input type="date" value="2026-06-28" />
+            <input type="date" id="e-date" value="${canSave ? "" : "2026-06-28"}" />
           </label>
           <label>
             時間
-            <input type="text" value="10:00 - 12:00" />
+            <input type="text" id="e-time" value="${canSave ? "" : "10:00 - 12:00"}" placeholder="例：10:00 - 12:00" />
           </label>
           <label>
             開催地域（市町村程度）
-            <input type="text" value="笠間市周辺" />
+            <input type="text" id="e-place" value="${canSave ? "" : "笠間市周辺"}" placeholder="例：笠間市周辺" />
           </label>
           <label>
-            定員
-            <input type="text" value="8名" />
+            定員（人数）
+            <input type="number" id="e-capacity" min="1" value="${canSave ? "" : "8"}" placeholder="例：8" />
           </label>
           <label>
             料金
-            <input type="text" value="無料" placeholder="例：無料 / 500円（材料費）" />
+            <input type="text" id="e-fee" value="無料" placeholder="例：無料 / 500円（材料費）" />
           </label>
           <label>
-            申込締切
-            <input type="date" value="2026-06-25" />
+            申込締切（任意）
+            <input type="date" id="e-deadline" />
           </label>
           <label>
-            持ち物
-            <input type="text" value="帽子、飲み物、汚れてもよい靴" />
+            持ち物（任意）
+            <input type="text" id="e-belongings" value="${canSave ? "" : "帽子、飲み物、汚れてもよい靴"}" />
           </label>
           <label>
-            雨天時の扱い
-            <input type="text" value="小雨決行。荒天時は中止（前日18時までにご連絡）" />
+            雨天時の扱い（任意）
+            <input type="text" id="e-rain" value="${canSave ? "" : "小雨決行。荒天時は中止（前日18時までにご連絡）"}" placeholder="例：小雨決行。荒天時は中止" />
           </label>
           <label>
-            当日の流れ（任意）
-            <textarea rows="3">10:00 集合・自己紹介 / 10:20 畑を歩いて草の観察 / 11:20 考え方の話 / 11:50 ふりかえり</textarea>
+            当日の流れ（任意・「時刻 内容」を / か改行で区切る）
+            <textarea rows="3" id="e-schedule" placeholder="10:00 集合・自己紹介 / 10:20 畑の観察 / 11:50 ふりかえり">${canSave ? "" : "10:00 集合・自己紹介 / 10:20 畑を歩いて草の観察 / 11:20 考え方の話 / 11:50 ふりかえり"}</textarea>
           </label>
           <label>
             紹介文
-            <textarea rows="3">畑まわりの草を観察し、残す草と刈る草の考え方を学びます。</textarea>
+            <textarea rows="3" id="e-desc" placeholder="どんな会か、ひとことで。">${canSave ? "" : "畑まわりの草を観察し、残す草と刈る草の考え方を学びます。"}</textarea>
           </label>
           <label>
             はじめての方へのひとこと（任意）
-            <input type="text" value="初参加・見学だけ・途中参加も歓迎です。手ぶらで大丈夫。" />
+            <input type="text" id="e-welcome" value="${canSave ? "" : "初参加・見学だけ・途中参加も歓迎です。手ぶらで大丈夫。"}" />
           </label>
           <label>
             補足・注意（任意）
-            <textarea rows="2">詳細住所は参加確定後に運営から案内する想定です。</textarea>
+            <textarea rows="2" id="e-note">${canSave ? "" : "詳細住所は参加確定後に運営から案内する想定です。"}</textarea>
           </label>
           <label>
             写真（任意）
-            <span class="fake-upload">画像を選ぶ見た目だけ</span>
+            <span class="fake-upload">写真は今後対応予定です</span>
           </label>
           <p class="form-help">詳細住所や正確な開催地点は、参加確定後に案内する想定です。販売・出品の場ではありません。</p>
-          <button class="button button-primary" type="button">登録する（ダミー）</button>
+          <p class="form-error" data-event-error hidden></p>
+          ${
+            canSave
+              ? `<button class="button button-primary" type="button" data-event-save>登録を申請する（運営確認後に公開）</button>`
+              : `<button class="button button-primary" type="button" disabled>登録する（承認済み団体のみ）</button>`
+          }
         </form>
         <aside class="side-panel">
           <h3>登録の注意</h3>
-          <p>イベントは運営確認のうえ公開される想定です。</p>
+          <p>イベントは運営確認のうえ公開されます。</p>
           <p>誰でも自由に作成できる仕様ではなく、承認済み団体のみ登録できます。</p>
           <div class="tag-row">
             <span class="tag">承認済み団体のみ</span>
@@ -1820,6 +1975,7 @@ const renderManageEventForm = () =>
       </div>
     `,
   });
+};
 
 const routeTable = {
   home: () => renderHome(),
@@ -1839,8 +1995,97 @@ const routeTable = {
   manage: (parts) => {
     if (parts[1] === "group") return renderManageGroup();
     if (parts[1] === "event") return renderManageEventForm();
+    if (parts[1] === "admin") return renderAdminQueue();
     return renderManageHome();
   },
+};
+
+// ---- 運営の承認キュー（P2-4）----
+let adminQueue = null;
+const loadAdminQueue = async () => {
+  const [pendingGroups, pendingEvents] = await Promise.all([
+    window.NOU_API.fetchPendingGroups(),
+    window.NOU_API.fetchPendingEvents(),
+  ]);
+  adminQueue = { groups: pendingGroups, events: pendingEvents };
+};
+
+const renderAdminQueue = () => {
+  if (!session || !isAdmin()) return renderNotFound("この画面は運営のみ利用できます", "#/manage");
+  if (!adminQueue) {
+    loadAdminQueue()
+      .then(renderApp)
+      .catch((error) => console.warn("承認キューの読み込みに失敗しました。", error));
+    return pageFrame({
+      eyebrow: "運営",
+      title: "承認キュー",
+      copy: "読み込んでいます…",
+      actions: backLink("#/manage", "団体メニューへ戻る"),
+      body: `<p class="empty-note">読み込んでいます…</p>`,
+    });
+  }
+
+  return pageFrame({
+    eyebrow: "運営",
+    title: "承認キュー",
+    copy: "団体の承認と、イベントの公開を行います。承認・公開すると即座にサイトに表示されます。",
+    actions: `
+      ${backLink("#/manage", "団体メニューへ戻る")}
+      <button class="button button-light" type="button" data-admin="reload">再読み込み</button>
+    `,
+    body: `
+      ${manageNoticeBlock()}
+      <section class="section-block">
+        ${sectionHeading("users", "Groups", "承認待ちの団体", "活動の実在性と方針への同意を確認してから承認します。")}
+        ${
+          adminQueue.groups.length
+            ? adminQueue.groups
+                .map(
+                  (group) => `
+                    <article class="detail-card admin-card">
+                      <div class="detail-body">
+                        <h3>${escapeHtml(group.display_name)}</h3>
+                        <p>${escapeHtml(group.area)}｜${escapeHtml(group.stage || "")}</p>
+                        <div class="tag-row">${renderTags(group.methods || [])}</div>
+                        <p>${escapeHtml(group.note || "")}</p>
+                        <div class="action-row">
+                          <button class="button button-primary" type="button" data-admin="approve-group" data-id="${group.id}">承認して掲載する</button>
+                          <button class="button button-light" type="button" data-admin="reject-group" data-id="${group.id}">見送る</button>
+                        </div>
+                      </div>
+                    </article>
+                  `,
+                )
+                .join("")
+            : `<p class="empty-note">承認待ちの団体はありません。</p>`
+        }
+      </section>
+      <section class="section-block">
+        ${sectionHeading("calendar", "Events", "公開待ちのイベント", "内容を確認してから公開します。")}
+        ${
+          adminQueue.events.length
+            ? adminQueue.events
+                .map(
+                  (event) => `
+                    <article class="detail-card admin-card">
+                      <div class="detail-body">
+                        <h3>${escapeHtml(event.title)}</h3>
+                        <p>${escapeHtml(event.event_date || "")}｜${escapeHtml(event.place || "")}｜${escapeHtml(event.event_type || "")}｜主催：${escapeHtml(event.groups?.display_name || "")}</p>
+                        <p>${escapeHtml(event.description || "")}</p>
+                        <div class="action-row">
+                          <button class="button button-primary" type="button" data-admin="publish-event" data-id="${event.id}">公開する</button>
+                          <button class="button button-light" type="button" data-admin="cancel-event" data-id="${event.id}">見送る</button>
+                        </div>
+                      </div>
+                    </article>
+                  `,
+                )
+                .join("")
+            : `<p class="empty-note">公開待ちのイベントはありません。</p>`
+        }
+      </section>
+    `,
+  });
 };
 
 const rootRouteFor = (parts) => parts[0] ?? "home";
@@ -1949,6 +2194,169 @@ app.addEventListener("click", (event) => {
     }
     saveUi();
     persistActionToDb(kind, id, willOn);
+    return;
+  }
+
+  const groupSave = event.target.closest("[data-group-save]");
+  if (groupSave) {
+    const errorEl = document.querySelector("[data-group-error]");
+    const name = (document.querySelector("#g-name")?.value || "").trim();
+    const area = (document.querySelector("#g-area")?.value || "").trim();
+    if (!name || !area) {
+      if (errorEl) {
+        errorEl.textContent = "団体名と活動地域を入れてください。";
+        errorEl.hidden = false;
+      }
+      return;
+    }
+    const payload = {
+      display_name: name,
+      area,
+      methods: [...document.querySelectorAll('input[name="g-method"]:checked')].map((el) => el.value),
+      stage: (document.querySelector("#g-stage")?.value || "").trim(),
+      note: (document.querySelector("#g-note")?.value || "").trim(),
+      activity: (document.querySelector("#g-activity")?.value || "").trim(),
+      rhythm: (document.querySelector("#g-rhythm")?.value || "").trim(),
+      welcome: (document.querySelector("#g-welcome")?.value || "").trim(),
+      links: {
+        website: (document.querySelector("#g-website")?.value || "").trim(),
+        instagram: (document.querySelector("#g-instagram")?.value || "").trim(),
+        sns: (document.querySelector("#g-sns")?.value || "").trim(),
+      },
+    };
+    groupSave.disabled = true;
+    const groupId = groupSave.dataset.groupId;
+    const task = groupId
+      ? window.NOU_API.updateGroup(groupId, payload)
+      : window.NOU_API.createGroup(session.user.id, payload);
+    task
+      .then(async () => {
+        await loadMyGroups();
+        await hydrateFromApi();
+        manageNotice = groupId
+          ? "保存しました。"
+          : "申請を受け付けました。運営の承認後に「仲間を探す」へ掲載されます。";
+        renderApp();
+      })
+      .catch((error) => {
+        console.warn("団体情報の保存に失敗しました。", error);
+        groupSave.disabled = false;
+        if (errorEl) {
+          errorEl.textContent = "保存に失敗しました。少し待ってからもう一度お試しください。";
+          errorEl.hidden = false;
+        }
+      });
+    return;
+  }
+
+  const updateSend = event.target.closest("[data-update-send]");
+  if (updateSend) {
+    const errorEl = document.querySelector("[data-update-error]");
+    const title = (document.querySelector("#u-title")?.value || "").trim();
+    const body = (document.querySelector("#u-body")?.value || "").trim();
+    if (!title || !body) {
+      if (errorEl) {
+        errorEl.textContent = "タイトルと本文を入れてください。";
+        errorEl.hidden = false;
+      }
+      return;
+    }
+    updateSend.disabled = true;
+    window.NOU_API.createGroupUpdate(updateSend.dataset.groupId, title, body)
+      .then(async () => {
+        await hydrateFromApi();
+        manageNotice = "便りを届けました。団体ページとホームに表示されます。";
+        renderApp();
+      })
+      .catch((error) => {
+        console.warn("便りの送信に失敗しました。", error);
+        updateSend.disabled = false;
+        if (errorEl) {
+          errorEl.textContent = "送信に失敗しました。少し待ってからもう一度お試しください。";
+          errorEl.hidden = false;
+        }
+      });
+    return;
+  }
+
+  const eventSave = event.target.closest("[data-event-save]");
+  if (eventSave) {
+    const errorEl = document.querySelector("[data-event-error]");
+    const group = myApprovedGroup();
+    const title = (document.querySelector("#e-title")?.value || "").trim();
+    const eventDate = document.querySelector("#e-date")?.value || "";
+    const place = (document.querySelector("#e-place")?.value || "").trim();
+    if (!group || !title || !eventDate || !place) {
+      if (errorEl) {
+        errorEl.textContent = "イベント名・日付・開催地域を入れてください。";
+        errorEl.hidden = false;
+      }
+      return;
+    }
+    const capacityValue = parseInt(document.querySelector("#e-capacity")?.value || "", 10);
+    const payload = {
+      group_id: group.id,
+      title,
+      event_type: document.querySelector("#e-type")?.value || "観察会",
+      event_date: eventDate,
+      time_label: (document.querySelector("#e-time")?.value || "").trim(),
+      place,
+      capacity: Number.isFinite(capacityValue) ? capacityValue : null,
+      fee: (document.querySelector("#e-fee")?.value || "無料").trim() || "無料",
+      deadline: document.querySelector("#e-deadline")?.value || null,
+      belongings: (document.querySelector("#e-belongings")?.value || "").trim(),
+      rain_policy: (document.querySelector("#e-rain")?.value || "").trim(),
+      schedule: parseScheduleText(document.querySelector("#e-schedule")?.value),
+      description: (document.querySelector("#e-desc")?.value || "").trim(),
+      welcome: (document.querySelector("#e-welcome")?.value || "").trim(),
+      note: (document.querySelector("#e-note")?.value || "").trim(),
+      seed_exchange: (document.querySelector("#e-type")?.value || "") === "種の交換会",
+    };
+    eventSave.disabled = true;
+    window.NOU_API.createEvent(payload)
+      .then(() => {
+        manageNotice = "イベントを申請しました。運営の確認後に公開されます。";
+        window.location.hash = "#/manage";
+        renderApp();
+      })
+      .catch((error) => {
+        console.warn("イベントの申請に失敗しました。", error);
+        eventSave.disabled = false;
+        if (errorEl) {
+          errorEl.textContent = "申請に失敗しました。少し待ってからもう一度お試しください。";
+          errorEl.hidden = false;
+        }
+      });
+    return;
+  }
+
+  const adminButton = event.target.closest("[data-admin]");
+  if (adminButton) {
+    const action = adminButton.dataset.admin;
+    const id = adminButton.dataset.id;
+    adminButton.disabled = true;
+    const task =
+      action === "approve-group"
+        ? window.NOU_API.setGroupStatus(id, "approved")
+        : action === "reject-group"
+          ? window.NOU_API.setGroupStatus(id, "rejected")
+          : action === "publish-event"
+            ? window.NOU_API.setEventStatus(id, "published")
+            : action === "cancel-event"
+              ? window.NOU_API.setEventStatus(id, "cancelled")
+              : Promise.resolve();
+    task
+      .then(async () => {
+        await loadAdminQueue();
+        await hydrateFromApi();
+        await loadMyGroups();
+        if (action !== "reload") manageNotice = "反映しました。";
+        renderApp();
+      })
+      .catch((error) => {
+        console.warn("承認操作に失敗しました。", error);
+        adminButton.disabled = false;
+      });
     return;
   }
 
@@ -2238,19 +2646,23 @@ window.addEventListener("DOMContentLoaded", async () => {
       if (session && !wasLoggedIn) {
         authEmailSent = false;
         await syncMyStateWithDb();
-        await loadMyNotes();
+        await Promise.all([loadMyNotes(), loadMyProfile(), loadMyGroups()]);
         // ログインメールから戻った直後はマイページへ案内する。
         if (!window.location.hash.startsWith("#/")) {
           window.location.replace("#/mypage");
           return;
         }
       }
-      if (!session) myNotes = null;
+      if (!session) {
+        myNotes = null;
+        myProfile = null;
+        myGroups = null;
+      }
       renderApp();
     });
     if (session) {
       await syncMyStateWithDb();
-      await loadMyNotes();
+      await Promise.all([loadMyNotes(), loadMyProfile(), loadMyGroups()]);
     }
   }
 

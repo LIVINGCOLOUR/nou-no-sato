@@ -2725,3 +2725,24 @@ button.note-delete {
   color: #8a2f12;
   background: #fff;
 }
+
+.admin-card {
+  margin-bottom: 14px;
+}
+
+.admin-card .detail-body h3 {
+  margin: 0 0 4px;
+}
+
+.update-form {
+  max-width: 640px;
+}
+
+.static-field {
+  display: block;
+  border: 1px dashed rgba(46, 125, 50, 0.3);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  color: var(--muted);
+  background: rgba(237, 246, 231, 0.6);
+}

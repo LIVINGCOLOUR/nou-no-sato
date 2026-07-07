@@ -84,6 +84,60 @@
         if (error) throw error;
       }
     },
+    // P2-4: プロフィール（roleの確認・初回作成）
+    async fetchMyProfile(userId) {
+      const { data, error } = await client.from("profiles").select("*").eq("id", userId).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    async upsertProfile(profile) {
+      const { error } = await client.from("profiles").upsert(profile);
+      if (error) throw error;
+    },
+
+    // P2-4: 団体（申請・編集・便り・イベント登録）
+    async fetchMyGroups(userId) {
+      const { data, error } = await client.from("groups").select("*").eq("owner_id", userId);
+      if (error) throw error;
+      return data;
+    },
+    async createGroup(userId, fields) {
+      const { error } = await client.from("groups").insert({ owner_id: userId, ...fields });
+      if (error) throw error;
+    },
+    async updateGroup(groupId, fields) {
+      const { error } = await client.from("groups").update(fields).eq("id", groupId);
+      if (error) throw error;
+    },
+    async createGroupUpdate(groupId, title, body) {
+      const { error } = await client.from("group_updates").insert({ group_id: groupId, title, body });
+      if (error) throw error;
+    },
+    async createEvent(fields) {
+      const { error } = await client.from("events").insert(fields);
+      if (error) throw error;
+    },
+
+    // P2-4: 運営の承認キュー（RLSにより admin のみ pending が見える・statusを変えられる）
+    async fetchPendingGroups() {
+      const { data, error } = await client.from("groups").select("*").eq("status", "pending");
+      if (error) throw error;
+      return data;
+    },
+    async fetchPendingEvents() {
+      const { data, error } = await client.from("events").select("*, groups(display_name)").eq("status", "pending");
+      if (error) throw error;
+      return data;
+    },
+    async setGroupStatus(groupId, status) {
+      const { error } = await client.from("groups").update({ status }).eq("id", groupId);
+      if (error) throw error;
+    },
+    async setEventStatus(eventId, status) {
+      const { error } = await client.from("events").update({ status }).eq("id", eventId);
+      if (error) throw error;
+    },
+
     // P2-3: 栽培記録（RLSにより本人の行しか読み書きできない）
     async fetchMyNotes(userId) {
       const { data, error } = await client
