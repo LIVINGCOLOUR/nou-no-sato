@@ -339,3 +339,25 @@ create trigger touch_events before update on public.events
   for each row execute function public.touch_updated_at();
 create trigger touch_notes before update on public.notes
   for each row execute function public.touch_updated_at();
+
+-- =========================================================
+-- Storage: 栽培記録の写真（P2-5・適用済み 2026-07-07）
+-- =========================================================
+-- バケットは Storage API で作成済み（SQLでは作れないため参考値を記す）:
+--   id/name: note-photos, public: false,
+--   file_size_limit: 5242880 (5MB),
+--   allowed_mime_types: image/jpeg, image/png, image/webp
+-- パスは {user_id}/{filename}。本人のみ読み書きでき、
+-- フォルダ名（先頭セグメント）が自分のユーザーIDであることも強制する。
+create policy "note_photos_owner_all" on storage.objects
+  for all
+  using (
+    bucket_id = 'note-photos'
+    and owner = auth.uid()
+    and (storage.foldername(name))[1] = auth.uid()::text
+  )
+  with check (
+    bucket_id = 'note-photos'
+    and owner = auth.uid()
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );

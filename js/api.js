@@ -161,6 +161,55 @@
       if (error) throw error;
     },
 
+    // P2-5: 在来種の情報提供（審査キュー）
+    async submitSeedContribution(userId, fields) {
+      const { error } = await client.from("seed_contributions").insert({ user_id: userId, ...fields });
+      if (error) throw error;
+    },
+    async fetchPendingContributions() {
+      const { data, error } = await client.from("seed_contributions").select("*").eq("status", "pending");
+      if (error) throw error;
+      return data;
+    },
+    async resolveSeedContribution(contribution, approve) {
+      if (approve) {
+        const slug = `contrib-${Date.now()}`;
+        const { error: seedError } = await client.from("seeds").insert({
+          id: slug,
+          name: contribution.seed_name,
+          crop_type: contribution.crop_type,
+          area: contribution.area,
+          source_type: "research_needed",
+          source_label: "調査中・情報提供",
+          source_name: "住民からの情報提供（運営確認中）",
+          description_short: contribution.story,
+          data_confidence: "情報提供・確認中",
+          location_note: "地図上の位置は確認後に表示します",
+          photo: "photo-seed",
+        });
+        if (seedError) throw seedError;
+      }
+      const { error } = await client
+        .from("seed_contributions")
+        .update({ status: approve ? "approved" : "rejected" })
+        .eq("id", contribution.id);
+      if (error) throw error;
+    },
+
+    // P2-5: 栽培記録の写真（非公開バケット・本人のみ）
+    async uploadNotePhoto(userId, file) {
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error } = await client.storage.from("note-photos").upload(path, file);
+      if (error) throw error;
+      return `storage:${path}`;
+    },
+    async signNotePhoto(path) {
+      const { data, error } = await client.storage.from("note-photos").createSignedUrl(path, 3600);
+      if (error) throw error;
+      return data.signedUrl;
+    },
+
     async setFollow(userId, groupId, on) {
       if (on) {
         const { error } = await client.from("follows").upsert({ user_id: userId, group_id: groupId });

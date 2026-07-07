@@ -2746,3 +2746,27 @@ button.note-delete {
   color: var(--muted);
   background: rgba(237, 246, 231, 0.6);
 }
+
+/* P2-5: 栽培記録の写真（本人のみ・署名URLで表示） */
+.note-photo-real {
+  background: var(--mist);
+}
+
+.note-photo-real img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.note-photo-real::after {
+  display: none;
+}
+
+.note-form input[type="file"] {
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-small, 10px);
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.6);
+  font-size: 0.88rem;
+}

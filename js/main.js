@@ -90,15 +90,20 @@ let myNotes = null;
 const activeNotes = () => myNotes ?? notes;
 const usingOwnNotes = () => myNotes !== null;
 
-const dbNoteToUi = (row) => ({
-  id: row.id,
-  date: (row.noted_on || "").replaceAll("-", "/"),
-  crop: row.crop,
-  method: row.method,
-  memo: row.memo,
-  learning: row.learning,
-  photo: row.photo || "photo-sprout",
-});
+const dbNoteToUi = (row) => {
+  const isStorage = (row.photo || "").startsWith("storage:");
+  return {
+    id: row.id,
+    date: (row.noted_on || "").replaceAll("-", "/"),
+    crop: row.crop,
+    method: row.method,
+    memo: row.memo,
+    learning: row.learning,
+    photo: !row.photo || isStorage ? "photo-sprout" : row.photo,
+    photoPath: isStorage ? row.photo.slice("storage:".length) : null,
+    photoUrl: null,
+  };
+};
 
 const loadMyNotes = async () => {
   if (!session || !dbConnected() || !window.NOU_API?.enabled) {
@@ -107,7 +112,19 @@ const loadMyNotes = async () => {
   }
   try {
     const rows = await window.NOU_API.fetchMyNotes(session.user.id);
-    myNotes = rows.map(dbNoteToUi);
+    const list = rows.map(dbNoteToUi);
+    await Promise.all(
+      list
+        .filter((note) => note.photoPath)
+        .map(async (note) => {
+          try {
+            note.photoUrl = await window.NOU_API.signNotePhoto(note.photoPath);
+          } catch (error) {
+            console.warn("写真の表示URL取得に失敗しました。", error);
+          }
+        }),
+    );
+    myNotes = list;
   } catch (error) {
     console.warn("栽培記録の読み込みに失敗しました。", error);
     myNotes = null;
@@ -538,7 +555,9 @@ const methodCard = (method) => `
 const noteCard = (note, own = false) => `
   <article class="note-card">
     <div class="note-top">
-      <div class="note-photo ${note.photo}" aria-hidden="true"></div>
+      <div class="note-photo ${note.photoUrl ? "note-photo-real" : note.photo}" aria-hidden="true">${
+        note.photoUrl ? `<img src="${note.photoUrl}" alt="" loading="lazy" />` : ""
+      }</div>
       <div>
         <h3>${escapeHtml(note.date)}｜${escapeHtml(note.crop)}</h3>
         <p>${escapeHtml(note.memo)}</p>
@@ -1280,15 +1299,23 @@ const renderNoteForm = (noteId = null) => {
             うまくいったこと・学び（任意）
             <textarea rows="2" id="note-learning" placeholder="草マルチを厚くした畝は乾きにくい。">${escapeHtml(values.learning)}</textarea>
           </label>
-          <label>
-            写真を追加（任意）
-            <span class="fake-upload">写真は今後対応予定です</span>
-          </label>
+          ${
+            own
+              ? `<label>
+                  写真を追加（任意・5MBまで）
+                  <input type="file" id="note-photo-file" accept="image/jpeg,image/png,image/webp" />
+                  ${editing?.photoUrl ? `<span class="form-help">保存済みの写真があります。新しく選ぶと差し替わります。</span>` : ""}
+                </label>`
+              : `<label>
+                  写真を追加（任意）
+                  <span class="fake-upload">写真の保存はログイン後に使えます</span>
+                </label>`
+          }
           <label class="toggle-line">
             <input type="checkbox" checked disabled />
             公開設定：非公開
           </label>
-          <p class="form-help">この記録は自分だけに表示されます。正確な位置情報や詳細な畑住所は保存しません。</p>
+          <p class="form-help">この記録は自分だけに表示されます。写真も非公開で、正確な位置情報や詳細な畑住所は保存しません。</p>
           <p class="form-error" data-note-error hidden></p>
           ${
             own
@@ -1350,41 +1377,45 @@ const renderNativeMap = () =>
     `,
   });
 
-const renderSeedContribute = () =>
-  pageFrame({
+const renderSeedContribute = () => {
+  const canSave = Boolean(session && dbConnected() && window.NOU_API?.enabled);
+  return pageFrame({
     eyebrow: "Contribute",
     title: "在来種の情報提供",
-    copy: "地域に伝わる種の情報を運営に伝える静的フォームです。保存処理はありません。寄せられた情報は運営が出典や状況を確認したうえで、地域の目安として掲載します。",
+    copy: "地域に伝わる種の情報を運営に伝えるフォームです。寄せられた情報は運営が出典や状況を確認したうえで、地域の目安として掲載します。",
     actions: backLink("#/native-map", "在来種マップへ戻る"),
     body: `
+      ${manageNoticeBlock()}
+      ${canSave ? "" : `<p class="form-help">情報提供には<a class="text-link" href="#/mypage">ログイン</a>が必要です（運営からの確認のため）。</p>`}
       <div class="note-layout">
-        <form class="note-form" aria-label="在来種 情報提供入力イメージ">
+        <form class="note-form" aria-label="在来種 情報提供フォーム">
           <label>
             作物名・通称
-            <input type="text" value="" placeholder="例：◯◯ねぎ、地域での呼び名" />
+            <input type="text" id="c-name" value="" placeholder="例：◯◯ねぎ、地域での呼び名" />
           </label>
           <label>
             作物の分類（任意）
-            <input type="text" value="" placeholder="例：ねぎ、だいこん、大豆" />
+            <input type="text" id="c-crop" value="" placeholder="例：ねぎ、だいこん、大豆" />
           </label>
           <label>
             地域（市町村程度）
-            <input type="text" value="" placeholder="例：石岡市八郷周辺" />
+            <input type="text" id="c-area" value="" placeholder="例：石岡市八郷周辺" />
           </label>
           <label>
             言い伝え・特徴
-            <textarea rows="3" placeholder="どんな種か、いつ頃から、どんな味や使われ方か など"></textarea>
+            <textarea rows="3" id="c-story" placeholder="どんな種か、いつ頃から、どんな味や使われ方か など"></textarea>
           </label>
           <label>
             出典・聞いた人（任意）
-            <input type="text" value="" placeholder="資料名、URL、地域の方からの聞き取り など" />
-          </label>
-          <label class="toggle-line">
-            <input type="checkbox" disabled />
-            運営からの確認連絡を受け取ってもよい
+            <input type="text" id="c-source" value="" placeholder="資料名、URL、地域の方からの聞き取り など" />
           </label>
           <p class="form-help">正確な採種地点・個人宅・栽培者の氏名は登録しません。掲載するのは市町村程度の地域目安だけです。販売や出品の場ではありません。</p>
-          <button class="button button-primary" type="button">運営に送る（デモ）</button>
+          <p class="form-error" data-contrib-error hidden></p>
+          ${
+            canSave
+              ? `<button class="button button-primary" type="button" data-contrib-send>運営に送る</button>`
+              : `<button class="button button-primary" type="button" disabled>運営に送る（ログインが必要）</button>`
+          }
         </form>
         <aside class="side-panel">
           <h3>掲載までの流れ</h3>
@@ -1402,6 +1433,7 @@ const renderSeedContribute = () =>
       </div>
     `,
   });
+};
 
 const renderSeedDetail = (id) => {
   const seed = seedById(id);
@@ -2003,11 +2035,12 @@ const routeTable = {
 // ---- 運営の承認キュー（P2-4）----
 let adminQueue = null;
 const loadAdminQueue = async () => {
-  const [pendingGroups, pendingEvents] = await Promise.all([
+  const [pendingGroups, pendingEvents, pendingContributions] = await Promise.all([
     window.NOU_API.fetchPendingGroups(),
     window.NOU_API.fetchPendingEvents(),
+    window.NOU_API.fetchPendingContributions(),
   ]);
-  adminQueue = { groups: pendingGroups, events: pendingEvents };
+  adminQueue = { groups: pendingGroups, events: pendingEvents, contributions: pendingContributions };
 };
 
 const renderAdminQueue = () => {
@@ -2082,6 +2115,31 @@ const renderAdminQueue = () => {
                 )
                 .join("")
             : `<p class="empty-note">公開待ちのイベントはありません。</p>`
+        }
+      </section>
+      <section class="section-block">
+        ${sectionHeading("map", "Seeds", "在来種の情報提供", "出典・現存状況を確認してから「調査中」ラベルで掲載します。")}
+        ${
+          (adminQueue.contributions || []).length
+            ? adminQueue.contributions
+                .map(
+                  (contrib) => `
+                    <article class="detail-card admin-card">
+                      <div class="detail-body">
+                        <h3>${escapeHtml(contrib.seed_name)}</h3>
+                        <p>${escapeHtml(contrib.area || "地域未記入")}${contrib.crop_type ? `｜${escapeHtml(contrib.crop_type)}` : ""}</p>
+                        <p>${escapeHtml(contrib.story || "")}</p>
+                        ${contrib.source_hint ? `<p>出典の手がかり：${escapeHtml(contrib.source_hint)}</p>` : ""}
+                        <div class="action-row">
+                          <button class="button button-primary" type="button" data-admin="approve-contrib" data-id="${contrib.id}">「調査中」で掲載する</button>
+                          <button class="button button-light" type="button" data-admin="reject-contrib" data-id="${contrib.id}">見送る</button>
+                        </div>
+                      </div>
+                    </article>
+                  `,
+                )
+                .join("")
+            : `<p class="empty-note">確認待ちの情報提供はありません。</p>`
         }
       </section>
     `,
@@ -2334,6 +2392,7 @@ app.addEventListener("click", (event) => {
   if (adminButton) {
     const action = adminButton.dataset.admin;
     const id = adminButton.dataset.id;
+    const contribution = (adminQueue?.contributions || []).find((item) => String(item.id) === id);
     adminButton.disabled = true;
     const task =
       action === "approve-group"
@@ -2344,7 +2403,11 @@ app.addEventListener("click", (event) => {
             ? window.NOU_API.setEventStatus(id, "published")
             : action === "cancel-event"
               ? window.NOU_API.setEventStatus(id, "cancelled")
-              : Promise.resolve();
+              : action === "approve-contrib" && contribution
+                ? window.NOU_API.resolveSeedContribution(contribution, true)
+                : action === "reject-contrib" && contribution
+                  ? window.NOU_API.resolveSeedContribution(contribution, false)
+                  : Promise.resolve();
     task
       .then(async () => {
         await loadAdminQueue();
@@ -2356,6 +2419,43 @@ app.addEventListener("click", (event) => {
       .catch((error) => {
         console.warn("承認操作に失敗しました。", error);
         adminButton.disabled = false;
+      });
+    return;
+  }
+
+  const contribSend = event.target.closest("[data-contrib-send]");
+  if (contribSend) {
+    const errorEl = document.querySelector("[data-contrib-error]");
+    const seedName = (document.querySelector("#c-name")?.value || "").trim();
+    const area = (document.querySelector("#c-area")?.value || "").trim();
+    const story = (document.querySelector("#c-story")?.value || "").trim();
+    if (!seedName || !area || !story) {
+      if (errorEl) {
+        errorEl.textContent = "作物名・地域・言い伝えを入れてください。";
+        errorEl.hidden = false;
+      }
+      return;
+    }
+    contribSend.disabled = true;
+    window.NOU_API.submitSeedContribution(session.user.id, {
+      seed_name: seedName,
+      crop_type: (document.querySelector("#c-crop")?.value || "").trim(),
+      area,
+      story,
+      source_hint: (document.querySelector("#c-source")?.value || "").trim(),
+    })
+      .then(() => {
+        manageNotice = "情報を運営に送りました。出典・現存状況を確認のうえ、地域の目安として掲載します。";
+        window.location.hash = "#/native-map";
+        renderApp();
+      })
+      .catch((error) => {
+        console.warn("情報提供の送信に失敗しました。", error);
+        contribSend.disabled = false;
+        if (errorEl) {
+          errorEl.textContent = "送信に失敗しました。少し待ってからもう一度お試しください。";
+          errorEl.hidden = false;
+        }
       });
     return;
   }
@@ -2375,12 +2475,25 @@ app.addEventListener("click", (event) => {
       }
       return;
     }
+    const photoFile = document.querySelector("#note-photo-file")?.files?.[0] || null;
+    if (photoFile && photoFile.size > 5 * 1024 * 1024) {
+      if (errorEl) {
+        errorEl.textContent = "写真は5MBまでです。小さい画像を選んでください。";
+        errorEl.hidden = false;
+      }
+      return;
+    }
     noteSave.disabled = true;
     const payload = { crop, noted_on: date, method, memo, learning };
     const noteId = noteSave.dataset.noteId;
-    const task = noteId
-      ? window.NOU_API.updateNote(noteId, payload)
-      : window.NOU_API.createNote(session.user.id, payload);
+    const task = (photoFile
+      ? window.NOU_API.uploadNotePhoto(session.user.id, photoFile).then((path) => {
+          payload.photo = path;
+        })
+      : Promise.resolve()
+    ).then(() =>
+      noteId ? window.NOU_API.updateNote(noteId, payload) : window.NOU_API.createNote(session.user.id, payload),
+    );
     task
       .then(async () => {
         await loadMyNotes();
