@@ -93,7 +93,7 @@ window.NOU_NO_SATO_DATA = {
       methods: ["有機農法", "在来種に関心"],
       oneLiner: "堆肥づくりと地域の種を少しずつ。気軽に話しましょう。",
       lookingFor: "種のことを話せる人",
-      photo: "photo-veggie",
+      photo: "photo-native-red-negi",
     },
     {
       id: "u04",
@@ -113,7 +113,7 @@ window.NOU_NO_SATO_DATA = {
       methods: ["自然栽培"],
       oneLiner: "肥料を入れない畑づくり5年目。うまくいかない年も含めて楽しんでいます。",
       lookingFor: "自然栽培の実践を話せる人",
-      photo: "photo-field",
+      photo: "photo-native-ukishima-daikon",
     },
     {
       id: "u06",

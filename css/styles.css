@@ -715,6 +715,22 @@ textarea {
     linear-gradient(180deg, #edf6d9 0 50%, #9a7665 50% 100%);
 }
 
+.photo-native-red-negi {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(23, 63, 27, 0.1)),
+    url("../assets/visuals/native-varieties/ibaraki-red-negi.jpg");
+  background-position: 58% 58%;
+  background-size: cover;
+}
+
+.photo-native-ukishima-daikon {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(31, 88, 48, 0.09)),
+    url("../assets/visuals/native-varieties/ukishima-daikon.jpg");
+  background-position: 42% 56%;
+  background-size: cover;
+}
+
 .privacy-note {
   display: inline-flex;
   margin-top: 10px;
@@ -2157,7 +2173,7 @@ textarea {
   line-height: 1.55;
 }
 
-/* 参加予定トグル（primary見た目） */
+/* 予定メモトグル（primary見た目） */
 .pill-toggle.pill-primary {
   color: #fff;
   border-color: var(--green-700);
@@ -2359,8 +2375,27 @@ textarea {
   .compact-grid,
   .trust-list,
   .onboard-grid,
-  .voice-list {
+  .voice-list,
+  .action-guide {
     grid-template-columns: 1fr;
+  }
+
+  .onboarding-callout {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .onboarding-callout ol {
+    grid-template-columns: 1fr;
+  }
+
+  .onboarding-next {
+    justify-content: stretch;
+  }
+
+  .onboarding-next .button {
+    width: 100%;
   }
 
   .contribute-cta .button {
@@ -2524,6 +2559,8 @@ textarea {
   display: flex;
   align-items: baseline;
   gap: 10px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .filter-row .filter-label {
@@ -2534,6 +2571,8 @@ textarea {
 }
 
 .filter-row .toolbar {
+  flex: 1 1 auto;
+  min-width: 0;
   margin: 0 0 8px;
 }
 
@@ -2714,6 +2753,142 @@ textarea {
   background: #ffe3d6;
   font-size: 0.88rem;
   font-weight: 800;
+}
+
+.action-guide {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.action-guide p {
+  margin: 0;
+  border: 1px solid rgba(46, 125, 50, 0.14);
+  border-radius: var(--radius);
+  padding: 9px 11px;
+  background: rgba(255, 253, 247, 0.92);
+}
+
+.action-guide strong,
+.action-guide span {
+  display: block;
+}
+
+.action-guide strong {
+  color: var(--green-800);
+  font-size: 0.84rem;
+}
+
+.action-guide span {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.onboarding-callout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(360px, 1.5fr);
+  gap: 16px;
+  align-items: start;
+  border: 1px solid rgba(46, 125, 50, 0.16);
+  border-radius: var(--radius-large);
+  padding: 18px;
+  margin-bottom: 18px;
+  background: linear-gradient(135deg, rgba(237, 246, 231, 0.86), rgba(255, 253, 247, 0.94));
+  box-shadow: var(--soft-shadow);
+}
+
+.onboarding-callout h2,
+.onboarding-callout p {
+  margin: 0;
+}
+
+.onboarding-callout h2 {
+  color: var(--green-800);
+  font-size: 1.25rem;
+}
+
+.onboarding-callout div > p:not(.eyebrow) {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.onboarding-callout ol {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.onboarding-callout li {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px;
+  background: #fff;
+}
+
+.onboarding-callout li.is-current {
+  border-color: rgba(245, 154, 35, 0.46);
+  background: #fff7e8;
+}
+
+.onboarding-callout li strong,
+.onboarding-callout li span {
+  display: block;
+}
+
+.onboarding-callout li strong {
+  color: var(--green-800);
+  font-size: 0.86rem;
+}
+
+.onboarding-callout li span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.onboarding-next {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 700px) {
+  .filter-row {
+    overflow: visible;
+  }
+
+  .filter-row .toolbar {
+    margin-right: 0;
+    padding-right: 0;
+  }
+
+  .action-guide,
+  .onboarding-callout,
+  .onboarding-callout ol {
+    grid-template-columns: 1fr;
+  }
+
+  .onboarding-callout {
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .onboarding-next {
+    justify-content: stretch;
+  }
+
+  .onboarding-next .button {
+    width: 100%;
+  }
 }
 
 .note-actions {

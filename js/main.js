@@ -10,7 +10,7 @@ const app = document.querySelector("#app");
 // フィルタはセッション内のみ。記録・プロフィール・フォーム入力は保存しない。
 const ui = {
   interested: new Set(), // 気になるイベント
-  joined: new Set(), // 参加予定に入れたイベント
+  joined: new Set(), // 予定メモに入れたイベント
   following: new Set(), // 活動を受け取る団体
   invited: new Set(), // イベントに誘った個人
   memberMethod: "all", // 仲間ページの農法フィルタ
@@ -226,7 +226,7 @@ const isPopular = (event) => {
 };
 // 表示上の「気になる」人数（他の人の数＋自分が押していれば+1）。
 const interestedTotal = (event) => (event.interestedCount || 0) + (ui.interested.has(event.id) ? 1 : 0);
-// 表示上の参加予定人数（自分が参加予定に入れていれば+1）。
+// 表示上の予定メモ人数（自分が予定メモに入れていれば+1）。
 const attendingTotal = (event) => (event.attending || 0) + (ui.joined.has(event.id) ? 1 : 0);
 
 // 日付は「M/D」表記。年はプロトタイプの想定年で補う。
@@ -295,7 +295,13 @@ const renderTags = (items) => items.map((item) => `<span class="tag">${escapeHtm
 
 const backLink = (href, label = "戻る") => `<a class="back-link" href="${href}">${label}</a>`;
 
-// セッション内で実際に切り替わる軽いトグル（気になる / 参加予定 / 受け取る / 誘う）。
+const actionGuide = (items) => `
+  <div class="action-guide" aria-label="操作の意味">
+    ${items.map((item) => `<p><strong>${escapeHtml(item.label)}</strong><span>${escapeHtml(item.text)}</span></p>`).join("")}
+  </div>
+`;
+
+// セッション内で実際に切り替わる軽いトグル（気になる / 予定メモ / 受け取る / 誘う）。
 const actionButton = ({ kind, id, on, off, primary = false }) => {
   const active = ui[kind].has(id);
   return `
@@ -473,7 +479,7 @@ const eventCard = (event, compact = false) => {
         : isPast
           ? `<a class="card-action" href="#/events/${event.id}">当日の様子・声を見る</a>`
           : `<div class="action-row">
-              ${actionButton({ kind: "interested", id: event.id, on: "気になるに追加ずみ", off: "気になる" })}
+              ${actionButton({ kind: "interested", id: event.id, on: "気になるに追加済み", off: "気になる" })}
               <a class="card-action card-action-inline" href="#/events/${event.id}">詳細を見る</a>
             </div>`
     }
@@ -588,10 +594,17 @@ const sourceBadge = (seed) =>
     ? `<span class="source-badge badge-research">${escapeHtml(seed.sourceLabel)}</span>`
     : `<span class="source-badge badge-source">${escapeHtml(seed.sourceLabel)}</span>`;
 
+const nativeVisualClassById = {
+  "ibaraki-red-negi": "photo-native-red-negi",
+  "ukishima-daikon": "photo-native-ukishima-daikon",
+};
+
+const seedPhotoClass = (seed) => nativeVisualClassById[seed.id] || seed.photo || "photo-map";
+
 const seedCard = (seed) => `
   <article class="seed-card">
     <div class="seed-top">
-      <div class="seed-photo ${seed.photo}" aria-hidden="true"></div>
+      <div class="seed-photo ${seedPhotoClass(seed)}" aria-hidden="true"></div>
       <div>
         <h3>${escapeHtml(seed.name)}</h3>
         <p class="seed-meta">${escapeHtml(seed.cropType)}｜${escapeHtml(seed.area)}</p>
@@ -682,6 +695,10 @@ const renderHome = () =>
 
       <section class="section-block">
         ${sectionHeading("calendar", "Upcoming", "近日のイベント", "直近の3件。「気になる」を押して、行くかは後で決められます。")}
+        ${actionGuide([
+          { label: "気になる", text: "あとで見返すための印。申込ではありません。" },
+          { label: "予定メモ", text: "行けそうな会を自分用に残します。正式申込は主催団体からの案内で行います。" },
+        ])}
         <div class="card-grid event-grid">${upcomingEvents()
           .slice(0, 3)
           .map((event) => eventCard(event))
@@ -790,6 +807,10 @@ const renderEvents = () => {
     copy: "地域の団体が開く観察会や勉強会の予定です。「気になる」で印をつけて、行くかは後で決められます。",
     tone: "warm-view",
     body: `
+      ${actionGuide([
+        { label: "気になる", text: "あとで見返すための印。相手には連絡されません。" },
+        { label: "予定メモ", text: "マイページに残る自分用メモ。申込確定ではありません。" },
+      ])}
       <div class="filter-stack">
         <div class="filter-row"><span class="filter-label">種別</span>${filterChips("eventType", eventTypeOptions)}</div>
         <div class="filter-row"><span class="filter-label">地域</span>${filterChips("eventArea", eventAreaOptions)}</div>
@@ -847,7 +868,7 @@ const renderEventDetail = (id) => {
           <dl class="detail-list">
             <div><dt>日時</dt><dd>${escapeHtml(event.date)}(${escapeHtml(event.day)}) ${escapeHtml(event.time)}</dd></div>
             <div><dt>地域</dt><dd>${escapeHtml(event.place)}${event.areaNote ? `（${escapeHtml(event.areaNote)}）` : ""}</dd></div>
-            <div><dt>定員</dt><dd>${escapeHtml(event.capacity)}（参加予定 <span data-attending-count="${event.id}" data-base="${event.attending ?? 0}">${attendingTotal(event)}</span>名）</dd></div>
+            <div><dt>定員</dt><dd>${escapeHtml(event.capacity)}（予定メモ <span data-attending-count="${event.id}" data-base="${event.attending ?? 0}">${attendingTotal(event)}</span>名）</dd></div>
             <div><dt>料金</dt><dd>${escapeHtml(event.fee || "無料")}</dd></div>
             <div><dt>申込締切</dt><dd>${escapeHtml(event.deadline || "-")}</dd></div>
             <div><dt>主催</dt><dd>${escapeHtml(host ? host.displayName : event.host)}</dd></div>
@@ -868,11 +889,14 @@ const renderEventDetail = (id) => {
             eventStatus(event) === "past"
               ? `<p class="past-note">このイベントは終了しました。次回の予定は<a class="text-link" href="${host ? `#/groups/${host.id}` : "#/events"}">団体ページ</a>や季節の便りでお知らせします。</p>`
               : `<div class="action-row">
-                   ${actionButton({ kind: "interested", id: event.id, on: "気になるに追加ずみ", off: "気になる" })}
-                   ${actionButton({ kind: "joined", id: event.id, on: "参加予定に入れました", off: "参加予定に入れる", primary: true })}
+                   ${actionButton({ kind: "interested", id: event.id, on: "気になるに追加済み", off: "気になる" })}
+                   ${actionButton({ kind: "joined", id: event.id, on: "予定メモに入れました", off: "予定メモに入れる", primary: true })}
                  </div>
                  <p class="interested-count" data-interested-count="${event.id}" data-base="${event.interestedCount || 0}">${interestedTotal(event)}人が「気になる」を押しています</p>
-                 <p class="form-help">まずは「気になる」だけでOK。参加予定はマイページにまとまります（実際の申込確定は主催団体からの案内で行う想定です）。</p>`
+                 ${actionGuide([
+                   { label: "気になる", text: "あとで見返すための印です。申込や連絡は発生しません。" },
+                   { label: "予定メモ", text: "マイページに残る自分用メモです。正式な申込確定は主催団体からの案内で行います。" },
+                 ])}`
           }
           ${host ? `<div class="corner-action"><a class="card-action" href="#/groups/${host.id}">開催団体を見る</a></div>` : ""}
         </div>
@@ -1453,7 +1477,7 @@ const renderSeedDetail = (id) => {
     actions: backLink("#/native-map", "在来種マップへ戻る"),
     body: `
       <article class="detail-card">
-        <div class="detail-visual ${seed.photo}" aria-hidden="true"></div>
+        <div class="detail-visual ${seedPhotoClass(seed)}" aria-hidden="true"></div>
         <div class="detail-body">
           ${sourceBadge(seed)}
           <dl class="detail-list">
@@ -1504,7 +1528,7 @@ const authSection = () => {
     return `
       <section class="auth-panel is-signed-in">
         <p><strong>ログイン中：</strong>${escapeHtml(session.user.email || "")}</p>
-        <p class="auth-note">「気になる」「参加予定」「活動を受け取る」は、この端末以外でも同じ状態で表示されます。</p>
+        <p class="auth-note">「気になる」「予定メモ」「活動を受け取る」は、この端末以外でも同じ状態で表示されます。</p>
         <button type="button" class="button button-light" data-auth="signout">ログアウト</button>
       </section>
     `;
@@ -1513,14 +1537,14 @@ const authSection = () => {
     return `
       <section class="auth-panel">
         <p><strong>ログイン用のメールを送りました。</strong></p>
-        <p class="auth-note">届いたメールのリンクを開くと、このサイトに戻ってログインが完了します。数分待っても届かない場合は迷惑メールもご確認ください。</p>
+        <p class="auth-note">この画面を閉じずにメールアプリを開き、届いたリンクを押してください。このサイトに戻るとログインが完了します。数分待っても届かない場合は迷惑メールもご確認ください。</p>
       </section>
     `;
   }
   return `
     <section class="auth-panel">
       <p><strong>ログイン（メールだけ・パスワード不要）</strong></p>
-      <p class="auth-note">ログインすると「気になる」「参加予定」「活動を受け取る」が端末をまたいで保存されます。登録に必要なのはメールアドレスだけです。</p>
+      <p class="auth-note">ログインすると「気になる」「予定メモ」「活動を受け取る」が端末をまたいで保存されます。登録に必要なのはメールアドレスだけです。スマホでは、この画面を閉じずにメールのリンクを開いてください。</p>
       <div class="auth-form">
         <input type="email" id="auth-email" placeholder="メールアドレス" autocomplete="email" />
         <button type="button" class="button button-primary" data-auth="send">ログインリンクを送る</button>
@@ -1576,7 +1600,7 @@ const renderMyPage = () => {
           </div>
         </div>
         <dl class="stats-grid">
-          <div><dt>参加予定</dt><dd>${ui.joined.size}件</dd></div>
+          <div><dt>予定メモ</dt><dd>${ui.joined.size}件</dd></div>
           <div><dt>気になる</dt><dd>${ui.interested.size}件</dd></div>
           <div><dt>受け取り中</dt><dd>${ui.following.size}団体</dd></div>
           <div><dt>誘っている人</dt><dd>${ui.invited.size}人</dd></div>
@@ -1619,11 +1643,11 @@ const renderMyPage = () => {
 
       <section class="section-block two-column">
         <div>
-          <h2>参加予定イベント</h2>
+          <h2>予定メモに入れたイベント</h2>
           ${
             joinedEvents.length
               ? `<div class="stack-list">${joinedEvents.map((event) => eventCard(event, true)).join("")}</div>`
-              : `<p class="empty-note">まだありません。イベント詳細の「参加予定に入れる」を押すと、ここにまとまります。</p>`
+              : `<p class="empty-note">まだありません。イベント詳細の「予定メモに入れる」を押すと、ここにまとまります。</p>`
           }
         </div>
         <div>
@@ -1743,19 +1767,41 @@ const renderManageHome = () =>
     actions: backLink("#/members", "仲間一覧へ戻る"),
     body: `
       ${manageNoticeBlock()}
+      <section class="onboarding-callout">
+        <div>
+          <p class="eyebrow">Start Here</p>
+          <h2>掲載までの次の一手</h2>
+          <p>団体は、まずプロフィール申請から始まります。イベント登録は、団体が掲載中になってから使えます。</p>
+        </div>
+        <ol>
+          <li class="${!session ? "is-current" : ""}"><strong>ログイン</strong><span>メールだけで本人確認します。</span></li>
+          <li class="${session && !(myGroups || []).length ? "is-current" : ""}"><strong>団体申請</strong><span>活動地域・方針・公式リンクを登録します。</span></li>
+          <li class="${(myGroups || []).some((group) => group.status === "pending") ? "is-current" : ""}"><strong>運営審査</strong><span>承認されるまで一般公開されません。</span></li>
+          <li class="${myApprovedGroup() ? "is-current" : ""}"><strong>イベント登録</strong><span>掲載中の団体だけが申請できます。</span></li>
+        </ol>
+        <div class="onboarding-next">
+          ${
+            !session
+              ? `<a class="button button-primary" href="#/mypage">ログインする</a>`
+              : myApprovedGroup()
+                ? `<a class="button button-primary" href="#/manage/event">イベントを登録する</a>`
+                : `<a class="button button-primary" href="#/manage/group">団体プロフィールを申請する</a>`
+          }
+        </div>
+      </section>
       <div class="route-grid">
         <a class="route-card" href="#/manage/group">
           <span class="route-icon">${svgIcon("users")}</span>
           <span>
             <h3>団体プロフィールを登録・編集</h3>
-            <p>「仲間を探す」に表示される団体情報と公式リンクを管理します。</p>
+            <p>まずここから申請します。承認後に「仲間を探す」へ掲載されます。</p>
           </span>
         </a>
         <a class="route-card" href="#/manage/event">
           <span class="route-icon">${svgIcon("calendar")}</span>
           <span>
             <h3>イベントを登録</h3>
-            <p>観察会や勉強会などのイベントを新しく登録します。</p>
+            <p>掲載中の団体だけが使えます。登録後、運営確認を経て公開されます。</p>
           </span>
         </a>
       </div>
