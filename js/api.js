@@ -40,6 +40,18 @@
       if (error) throw error;
       return data;
     },
+    async fetchEquipment() {
+      const { data, error } = await client
+        .from("equipment_listings")
+        .select(
+          "*, group:groups(display_name, entity_type), owner:profiles!equipment_listings_owner_id_fkey(nickname)",
+        )
+        .eq("moderation_status", "approved")
+        .neq("availability_status", "archived")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
 
     // P2-2: 認証（メールのマジックリンク）
     async signInWithEmail(email) {
@@ -118,6 +130,64 @@
       if (error) throw error;
     },
 
+    // 農具シェア: 掲載・利用申請・案件内の受渡確認
+    async fetchMyEquipmentListings(userId) {
+      const { data, error } = await client
+        .from("equipment_listings")
+        .select("*, group:groups(display_name, entity_type)")
+        .eq("owner_id", userId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    async createEquipmentListing(userId, fields) {
+      const { error } = await client.from("equipment_listings").insert({ owner_id: userId, ...fields });
+      if (error) throw error;
+    },
+    async updateEquipmentAvailability(listingId, availabilityStatus) {
+      const { error } = await client
+        .from("equipment_listings")
+        .update({ availability_status: availabilityStatus })
+        .eq("id", listingId);
+      if (error) throw error;
+    },
+    async fetchMyBorrowRequests(userId) {
+      const { data, error } = await client
+        .from("equipment_requests")
+        .select(
+          "*, listing:equipment_listings(title, area, fee_type, fee_amount, fee_unit, owner_id, group:groups(display_name, entity_type), owner:profiles!equipment_listings_owner_id_fkey(nickname))",
+        )
+        .eq("borrower_id", userId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    async fetchEquipmentRequestsForOwner(userId) {
+      const { data, error } = await client
+        .from("equipment_requests")
+        .select(
+          "*, listing:equipment_listings!inner(title, owner_id), borrower:profiles!equipment_requests_borrower_id_fkey(nickname, area)",
+        )
+        .eq("listing.owner_id", userId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    async createEquipmentRequest(userId, listingId, fields) {
+      const { error } = await client
+        .from("equipment_requests")
+        .insert({ borrower_id: userId, listing_id: listingId, ...fields });
+      if (error) throw error;
+    },
+    async updateEquipmentRequest(requestId, fields) {
+      const { error } = await client.from("equipment_requests").update(fields).eq("id", requestId);
+      if (error) throw error;
+    },
+    async reportEquipmentIncident(requestId, note) {
+      const { error } = await client.rpc("report_equipment_incident", { request_id: requestId, note });
+      if (error) throw error;
+    },
+
     // P2-4: 運営の承認キュー（RLSにより admin のみ pending が見える・statusを変えられる）
     async fetchPendingGroups() {
       const { data, error } = await client.from("groups").select("*").eq("status", "pending");
@@ -129,12 +199,29 @@
       if (error) throw error;
       return data;
     },
+    async fetchPendingEquipment() {
+      const { data, error } = await client
+        .from("equipment_listings")
+        .select(
+          "*, group:groups(display_name, entity_type), owner:profiles!equipment_listings_owner_id_fkey(nickname)",
+        )
+        .eq("moderation_status", "pending");
+      if (error) throw error;
+      return data;
+    },
     async setGroupStatus(groupId, status) {
       const { error } = await client.from("groups").update({ status }).eq("id", groupId);
       if (error) throw error;
     },
     async setEventStatus(eventId, status) {
       const { error } = await client.from("events").update({ status }).eq("id", eventId);
+      if (error) throw error;
+    },
+    async setEquipmentModeration(listingId, moderationStatus) {
+      const { error } = await client
+        .from("equipment_listings")
+        .update({ moderation_status: moderationStatus })
+        .eq("id", listingId);
       if (error) throw error;
     },
 

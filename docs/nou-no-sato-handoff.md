@@ -176,3 +176,11 @@ http://localhost:8000/index.html
 - Mermaid図は `docs/nou-no-sato-screen-flow.mmd` です。
 - ブラウザ確認用の静的図は `docs/nou-no-sato-screen-flow.html` です。
 - クリック可能プロトタイプのURL一覧は `docs/nou-no-sato-clickable-prototype.md` です。
+
+## 2026-07-13 農家・農具シェア追加
+
+- 農家・農園を団体と同じ運営審査制の活動主体として追加し、承認後はイベント申請を可能にしました。
+- 個人・農家・団体向け農具シェアを追加しました。無料・有料の両方に対応しますが、決済はアプリ外の当事者間精算です。
+- 対象は手動農具、農業資材、小型管理機・歩行型耕運機。大型・乗用・刈払機・チェーンソー等は対象外です。
+- 一般DMは作らず、承認済み案件内の受渡連絡だけを扱います。
+- DB適用SQLは `supabase/migrations/20260713_add_farmers_and_equipment_share.sql`。適用前は掲載例表示となり、実データの掲載・申請は使えません。

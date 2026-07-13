@@ -2,6 +2,7 @@ const data = window.NOU_NO_SATO_DATA;
 // events / friends / seeds はP2-1以降Supabaseから取得して差し替える（失敗時はモックのまま動く）。
 // methods / techniques / notes / peers / profile 等は当面静的コンテンツとして mock-data.js を正とする。
 let { events, friends, seeds } = data;
+let equipment = data.equipment || [];
 const { methods, notes, profile, routes, peers, onboarding, techniques } = data;
 
 const app = document.querySelector("#app");
@@ -17,6 +18,8 @@ const ui = {
   memberArea: "all", // 仲間ページの地域フィルタ
   eventType: "all", // イベントページの種別フィルタ
   eventArea: "all", // イベントページの地域フィルタ
+  equipmentCategory: "all", // 農具シェアの種類フィルタ
+  equipmentArea: "all", // 農具シェアの地域フィルタ
   noteCrop: "all", // 栽培記録の作物フィルタ
 };
 
@@ -51,6 +54,9 @@ const parseScheduleText = (text) =>
 // 自分のプロフィールと団体（P2-4）
 let myProfile = null;
 let myGroups = null;
+let myEquipmentListings = null;
+let myBorrowRequests = null;
+let equipmentRequestsForOwner = null;
 const isAdmin = () => myProfile?.role === "admin";
 const myApprovedGroup = () => (myGroups || []).find((group) => group.status === "approved") || null;
 
@@ -165,6 +171,8 @@ const iconPaths = {
     "M4 4.5 10 2l5 2.5L20 2v17.5L15 22l-5-2.5L4 22V4.5Zm7 .9v12.4l3 1.5V6.9l-3-1.5Z",
   shield:
     "M12 2 20 5v6c0 5-3.1 9-8 11-4.9-2-8-6-8-11V5l8-3Zm0 4.1L7 8v3c0 3.3 1.8 5.9 5 7.5 3.2-1.6 5-4.2 5-7.5V8l-5-1.9Z",
+  tools:
+    "M14.7 3.3a5 5 0 0 0-6.2 6.2L3 15v4h4l5.5-5.5a5 5 0 0 0 6.2-6.2l-3 3-2-2 3-3-2-2ZM5 17l4.8-4.8 2 2L7 19H5v-2Z",
 };
 
 const escapeHtml = (value) =>
@@ -196,6 +204,7 @@ const techniqueById = (id) => techniques.find((technique) => technique.id === id
 const eventById = (id) => events.find((event) => event.id === id);
 const seedById = (id) => seeds.find((seed) => seed.id === id);
 const groupById = (id) => friends.find((group) => group.id === id);
+const equipmentById = (id) => equipment.find((item) => item.id === id);
 const eventsByGroup = (id) => events.filter((event) => event.hostGroupId === id);
 const seedsByGroup = (id) => seeds.filter((seed) => seed.relatedGroupId === id);
 
@@ -526,7 +535,7 @@ const friendCard = (friend) => `
         <span class="friend-photo ${friend.photo}" aria-hidden="true"></span>
         <span>
           <strong>${escapeHtml(friend.displayName)}</strong>
-          <em>${escapeHtml(friend.area)}｜${escapeHtml(friend.status)}</em>
+          <em>${escapeHtml(friend.area)}｜${friend.entityType === "farmer" ? "農家・農園" : "団体・サークル"}｜${escapeHtml(friend.status)}</em>
         </span>
       </summary>
       <div class="detail-panel">
@@ -544,7 +553,7 @@ const friendCard = (friend) => `
         ${officialLinks(friend.links)}
         <div class="action-row">
           ${actionButton({ kind: "following", id: friend.id, on: "活動を受け取り中", off: "活動を受け取る" })}
-          <a class="card-action card-action-inline" href="#/groups/${friend.id}">団体ページ・イベントを見る</a>
+          <a class="card-action card-action-inline" href="#/groups/${friend.id}">${friend.entityType === "farmer" ? "農園" : "団体"}ページ・イベントを見る</a>
         </div>
         <span class="privacy-note">市町村程度・直接連絡先なし・イベント参加でつながる</span>
       </div>
@@ -597,6 +606,81 @@ const sourceBadge = (seed) =>
 const nativeVisualClassById = {
   "ibaraki-red-negi": "photo-native-red-negi",
   "ukishima-daikon": "photo-native-ukishima-daikon",
+};
+
+const EQUIPMENT_CATEGORY_LABELS = {
+  hand_tool: "手動農具",
+  small_powered: "小型動力農機",
+  material: "農業資材",
+};
+const EQUIPMENT_FEE_UNIT_LABELS = { half_day: "半日", day: "1日", week: "1週間" };
+const CONSUMABLES_LABELS = {
+  included: "貸出料金に含む",
+  actual_cost: "使用分を当事者間で確認",
+  owner: "通常使用分は貸し手負担",
+};
+const EQUIPMENT_REQUEST_STATUS = {
+  pending: "確認待ち",
+  approved: "承認済み・受渡調整",
+  declined: "今回は見送り",
+  cancelled: "取り消し",
+  handed_over: "貸出中",
+  returned: "返却確認済み",
+  incident: "使用停止・状態確認中",
+};
+
+const equipmentFeeLabel = (item) =>
+  item.feeType === "free"
+    ? "無料"
+    : `${Number(item.feeAmount || 0).toLocaleString("ja-JP")}円／${EQUIPMENT_FEE_UNIT_LABELS[item.feeUnit] || "1日"}`;
+
+const equipmentOwnerLabel = (item) =>
+  item.ownerType === "farmer" ? "農家・農園" : item.ownerType === "group" ? "団体・サークル" : "個人";
+
+const equipmentCard = (item) => `
+  <article class="equipment-card">
+    <div class="equipment-photo ${escapeHtml(item.photo || "photo-tool-generic")}" aria-hidden="true"></div>
+    <div class="equipment-card-body">
+      <div class="tag-row">
+        <span class="tag">${escapeHtml(EQUIPMENT_CATEGORY_LABELS[item.category] || "農具")}</span>
+        <span class="tag ${item.riskLevel === "powered" ? "tag-status-urgent" : "tag-status-open"}">${item.riskLevel === "powered" ? "操作確認が必要" : "低危険度"}</span>
+      </div>
+      <h3>${escapeHtml(item.title)}</h3>
+      <p>${escapeHtml(item.area)}｜${escapeHtml(equipmentOwnerLabel(item))}：${escapeHtml(item.ownerName)}</p>
+      <p class="equipment-fee">${escapeHtml(equipmentFeeLabel(item))}</p>
+      <p>${escapeHtml(item.description)}</p>
+      <div class="equipment-condition"><strong>${escapeHtml(item.conditionLabel || "状態を確認")}</strong><span>最終点検 ${escapeHtml(item.lastInspectedOn || "未記入")}</span></div>
+      <a class="card-action" href="#/tools/${item.id}">状態・条件を見る</a>
+    </div>
+  </article>
+`;
+
+const communitySubnav = (active) => `
+  <nav class="local-tabs" aria-label="地域でつながるメニュー">
+    <a href="#/members" class="${active === "members" ? "is-active" : ""}"${active === "members" ? ' aria-current="page"' : ""}>仲間・農家・団体</a>
+    <a href="#/tools" class="${active === "tools" ? "is-active" : ""}"${active === "tools" ? ' aria-current="page"' : ""}>農具シェア</a>
+  </nav>
+`;
+
+const loadMyEquipment = async () => {
+  if (!session || !dbConnected() || !window.NOU_API?.enabled) {
+    myEquipmentListings = null;
+    myBorrowRequests = null;
+    equipmentRequestsForOwner = null;
+    return;
+  }
+  try {
+    [myEquipmentListings, myBorrowRequests, equipmentRequestsForOwner] = await Promise.all([
+      window.NOU_API.fetchMyEquipmentListings(session.user.id),
+      window.NOU_API.fetchMyBorrowRequests(session.user.id),
+      window.NOU_API.fetchEquipmentRequestsForOwner(session.user.id),
+    ]);
+  } catch (error) {
+    console.warn("農具シェアの利用状況を読み込めませんでした。DB更新前の可能性があります。", error);
+    myEquipmentListings = null;
+    myBorrowRequests = null;
+    equipmentRequestsForOwner = null;
+  }
 };
 
 const seedPhotoClass = (seed) => nativeVisualClassById[seed.id] || seed.photo || "photo-map";
@@ -721,17 +805,17 @@ const renderHome = () =>
       </section>
 
       <section class="section-block">
-        ${sectionHeading("note", "More", "ほかにできること", "記録や在来種マップも、いつでもどうぞ。")}
-        ${routeCards(["notes", "native-map"])}
+        ${sectionHeading("note", "More", "ほかにできること", "記録、在来種、地域の農具も、いつでもどうぞ。")}
+        ${routeCards(["notes", "native-map", "tools"])}
       </section>
 
       <section class="section-block">
-        ${sectionHeading("users", "For Groups", "団体・サークルの方へ", "イベントを開く側として参加しませんか。")}
+        ${sectionHeading("users", "For Hosts", "農家・団体・サークルの方へ", "イベントを開く側、農具を貸す側として参加しませんか。")}
         <a class="route-card" href="#/manage">
           <span class="route-icon">${svgIcon("users")}</span>
           <span>
-            <h3>団体・活動を登録する</h3>
-            <p>団体プロフィールとイベントを登録できます。掲載は運営の審査・承認を経て始まります。</p>
+            <h3>農家・団体・活動を登録する</h3>
+            <p>プロフィール、イベント、農具を登録できます。一般公開は運営の審査・承認を経て始まります。</p>
           </span>
         </a>
       </section>
@@ -746,6 +830,8 @@ const renderMembers = () => {
     (area === "all" || item.area === area);
   const peerList = peers.filter(matchItem);
   const groupList = friends.filter(matchItem);
+  const farmerCount = friends.filter((item) => item.entityType === "farmer").length;
+  const groupCount = friends.length - farmerCount;
 
   const emptyNote = (label) =>
     `<p class="empty-note">この条件に当てはまる${label}はまだ少ないようです。関心や地域を変えて探してみてください。</p>`;
@@ -755,9 +841,11 @@ const renderMembers = () => {
     title: "仲間を探す",
     copy: "同じ地域・同じ関心の人を、ゆるく探せます。まずは眺めるだけでも大丈夫。",
     body: `
+      ${communitySubnav("members")}
       <div class="peer-band">
         <div><strong>${peers.length}</strong><span>近くの個人</span></div>
-        <div><strong>${friends.length}</strong><span>地域の団体</span></div>
+        <div><strong>${farmerCount}</strong><span>地域の農家</span></div>
+        <div><strong>${groupCount}</strong><span>地域の団体</span></div>
         <p class="peer-band-note">ニックネームと市町村程度だけを表示します。本名・詳細住所・畑の正確な位置は出しません。</p>
       </div>
 
@@ -773,10 +861,181 @@ const renderMembers = () => {
       </section>
 
       <section class="section-block">
-        ${sectionHeading("users", "Groups", "地域の団体・サークル", "活動のリズムがある集まり。イベント参加からつながれます。")}
-        <p class="form-help">団体・活動者の方へ：<a class="text-link" href="#/manage">団体プロフィールやイベントの登録はこちら（運営審査あり）</a></p>
-        ${groupList.length ? `<div class="card-grid">${groupList.map(friendCard).join("")}</div>` : emptyNote("団体")}
+        ${sectionHeading("users", "Farms & Groups", "地域の農家・団体・サークル", "畑見学や体験会など、イベント参加からつながれます。")}
+        <p class="form-help">農家・団体・活動者の方へ：<a class="text-link" href="#/manage">プロフィール、イベント、農具の登録はこちら（運営審査あり）</a></p>
+        ${groupList.length ? `<div class="card-grid">${groupList.map(friendCard).join("")}</div>` : emptyNote("農家・団体")}
       </section>
+    `,
+  });
+};
+
+const renderTools = () => {
+  const categoryOptions = [
+    { value: "all", label: "すべて" },
+    ...Object.entries(EQUIPMENT_CATEGORY_LABELS).map(([value, label]) => ({ value, label })),
+  ];
+  const areaOptions = [
+    { value: "all", label: "すべての地域" },
+    ...[...new Set(equipment.map((item) => item.area).filter(Boolean))].map((area) => ({ value: area, label: area })),
+  ];
+  const list = equipment.filter(
+    (item) =>
+      (ui.equipmentCategory === "all" || item.category === ui.equipmentCategory) &&
+      (ui.equipmentArea === "all" || item.area === ui.equipmentArea) &&
+      item.availabilityStatus !== "archived",
+  );
+
+  return pageFrame({
+    eyebrow: "Local Tool Share",
+    title: "農具を借りる・貸す",
+    copy: "地域の手動農具や個人向け小型農機を、状態と約束を確認して貸し借りします。無料・有料のどちらにも対応します。",
+    actions: `<a class="button button-primary" href="#/manage/tools/new">農具を掲載する</a><a class="button button-light" href="#/manage/tools">貸し借りの状況</a>`,
+    body: `
+      ${communitySubnav("tools")}
+      <section class="safety-summary" aria-label="農具シェアの基本方針">
+        <div><strong>正確な受渡場所は承認後</strong><span>一覧では市町村程度までです。</span></div>
+        <div><strong>一般DMはありません</strong><span>承認済み案件内の受渡連絡だけです。</span></div>
+        <div><strong>故障時はまず使用停止</strong><span>無断で分解・修理せず、状態を記録します。</span></div>
+      </section>
+      <p class="form-help">貸し借りの契約、料金精算、破損・修理の協議は貸し手と借り手の間で行います。運営は農具の安全性を保証せず、賠償額の判定や立替は行いません。ただし危険・虚偽掲載は運営確認の対象です。</p>
+
+      <div class="filter-stack">
+        <div class="filter-row"><span class="filter-label">種類</span>${filterChips("equipmentCategory", categoryOptions)}</div>
+        <div class="filter-row"><span class="filter-label">地域</span>${filterChips("equipmentArea", areaOptions)}</div>
+      </div>
+
+      <section class="section-block">
+        ${sectionHeading("tools", "Available", "貸し出せる農具", "状態、料金、点検日、使い方の条件を確認してから申請します。")}
+        ${list.length ? `<div class="equipment-grid">${list.map(equipmentCard).join("")}</div>` : `<p class="empty-note">この条件で掲載中の農具はありません。</p>`}
+      </section>
+
+      <section class="section-block excluded-equipment">
+        ${sectionHeading("shield", "Not Eligible", "対象外の機械", "事故リスクが高い機械は掲載できません。")}
+        <div class="tag-row">
+          ${["乗用型・大型農機", "刈払機", "チェーンソー", "高所作業機", "農薬散布機", "公道走行を伴う機械", "改造品・故障品・リコール対象品"].map((label) => `<span class="tag">${label}</span>`).join("")}
+        </div>
+      </section>
+    `,
+  });
+};
+
+const renderToolDetail = (id) => {
+  const item = equipmentById(id);
+  if (!item) return renderNotFound("農具が見つかりません", "#/tools");
+  const isOwner = Boolean(session && item.ownerId === session.user.id);
+  const canRequest = Boolean(session && item.persisted && !isOwner && item.availabilityStatus === "available");
+
+  return pageFrame({
+    eyebrow: "Tool Details",
+    title: item.title,
+    copy: `${item.area}で貸し出し中。正確な受渡場所は利用申請の承認後に、案件内で確認します。`,
+    actions: `${backLink("#/tools", "農具一覧へ戻る")}${isOwner ? `<a class="button button-light" href="#/manage/tools">掲載を管理</a>` : `<a class="button button-primary" href="#/tools/${item.id}/request">利用を申請する</a>`}`,
+    body: `
+      <article class="detail-card equipment-detail">
+        <div class="detail-visual ${escapeHtml(item.photo || "photo-tool-generic")}" aria-hidden="true"></div>
+        <div class="detail-body">
+          <div class="tag-row">
+            <span class="tag">${escapeHtml(EQUIPMENT_CATEGORY_LABELS[item.category] || "農具")}</span>
+            <span class="tag">${escapeHtml(equipmentOwnerLabel(item))}</span>
+            <span class="tag ${item.riskLevel === "powered" ? "tag-status-urgent" : "tag-status-open"}">${item.riskLevel === "powered" ? "小型動力農機" : "低危険度"}</span>
+          </div>
+          <p><strong>貸し手：</strong>${escapeHtml(item.ownerName)}</p>
+          <p>${escapeHtml(item.description)}</p>
+          <dl class="detail-list">
+            <div><dt>料金</dt><dd>${escapeHtml(equipmentFeeLabel(item))}</dd></div>
+            <div><dt>メーカー・型式</dt><dd>${escapeHtml([item.maker, item.model].filter(Boolean).join(" / ") || "未記入")}</dd></div>
+            <div><dt>使用年数</dt><dd>${escapeHtml(item.yearsUsed || "未記入")}</dd></div>
+            <div><dt>最終点検</dt><dd>${escapeHtml(item.lastInspectedOn || "未記入")}</dd></div>
+            <div><dt>状態</dt><dd>${escapeHtml(item.conditionLabel || "受渡時に確認")}</dd></div>
+            <div><dt>取扱説明書</dt><dd>${item.manualAvailable ? "あり" : "なし"}</dd></div>
+            <div><dt>使用経験</dt><dd>${item.experienceRequired ? "経験者のみ" : "未経験は受渡時に相談"}</dd></div>
+            <div><dt>消耗品</dt><dd>${escapeHtml(CONSUMABLES_LABELS[item.consumablesPolicy] || "当事者間で確認")}</dd></div>
+          </dl>
+          <h2>既知の不具合・癖</h2>
+          <p>${escapeHtml(item.knownIssues || "特記事項なし。受渡時に現物を確認してください。")}</p>
+          <h2>運搬と受渡</h2>
+          <p>${escapeHtml(item.transportNote || "受渡方法は承認後に確認します。")}</p>
+          <h2>貸し手からの条件</h2>
+          <p>${escapeHtml(item.lenderTerms || "受渡時の状態確認と、使用後の清掃をお願いします。")}</p>
+          ${item.feeNote ? `<p class="form-help">料金・消耗品の補足：${escapeHtml(item.feeNote)}</p>` : ""}
+        </div>
+      </article>
+
+      <section class="section-block two-column">
+        <div class="side-panel">
+          <h3>受渡時に確認すること</h3>
+          <ul class="check-list">
+            <li>外観、傷、漏れ、異音を写真と一緒に確認</li>
+            <li>小型動力農機は始動・停止・緊急停止を双方で確認</li>
+            <li>積み降ろし方法と必要人数を確認</li>
+            <li>返却日、料金、燃料・消耗品の扱いを確認</li>
+          </ul>
+        </div>
+        <div class="side-panel">
+          <h3>故障・事故が起きたら</h3>
+          <ol class="number-list">
+            <li>すぐに使用を止める</li>
+            <li>写真・動画で状態を残す</li>
+            <li>貸し手へ案件内で連絡する</li>
+            <li>合意前に分解・修理しない</li>
+          </ol>
+          <p>通常摩耗・経年劣化は原則貸し手、説明と異なる使用や明らかな操作ミスは原則借り手として、修理店の見積もりをもとに当事者間で確認します。</p>
+        </div>
+      </section>
+      ${
+        !item.persisted
+          ? `<p class="empty-note">これは表示確認用の掲載例です。DB更新後に登録された農具から実際の利用申請ができます。</p>`
+          : isOwner
+            ? `<p class="empty-note">自分の掲載です。<a class="text-link" href="#/manage/tools">貸し借りの状況</a>から管理できます。</p>`
+            : !session
+              ? `<p class="empty-note">利用申請には<a class="text-link" href="#/mypage">ログイン</a>が必要です。</p>`
+              : canRequest
+                ? `<div class="sticky-cta"><a class="button button-primary" href="#/tools/${item.id}/request">この農具の利用を申請する</a></div>`
+                : `<p class="empty-note">現在は利用申請を受け付けていません。</p>`
+      }
+    `,
+  });
+};
+
+const renderEquipmentRequestForm = (id) => {
+  const item = equipmentById(id);
+  if (!item) return renderNotFound("農具が見つかりません", "#/tools");
+  const signedIn = Boolean(session && dbConnected() && window.NOU_API?.enabled);
+  const canSave = signedIn && item.persisted && item.ownerId !== session.user.id && item.availabilityStatus === "available";
+  return pageFrame({
+    eyebrow: "Borrow Request",
+    title: "利用を申請する",
+    copy: `${item.title}の希望日と使い方を貸し手へ伝えます。これは予約確定ではありません。`,
+    actions: backLink(`#/tools/${item.id}`, "農具の詳細へ戻る"),
+    body: `
+      ${!signedIn ? `<p class="form-help">申請には<a class="text-link" href="#/mypage">ログイン</a>が必要です。</p>` : ""}
+      <div class="note-layout">
+        <form class="note-form" aria-label="農具利用申請フォーム">
+          <div class="field"><span class="field-label">農具</span><span class="static-field">${escapeHtml(item.title)}｜${escapeHtml(equipmentFeeLabel(item))}</span></div>
+          <label>利用開始日<input type="date" id="tool-start" /></label>
+          <label>返却予定日<input type="date" id="tool-end" /></label>
+          <label>利用目的<textarea rows="3" id="tool-purpose" placeholder="例：家庭菜園約30㎡の畝を耕すため"></textarea></label>
+          <label>使用経験
+            <select id="tool-experience">
+              <option value="">選んでください</option>
+              <option>同型機を使ったことがある</option>
+              <option>管理機・耕運機の経験がある</option>
+              <option>手動農具のみ経験がある</option>
+              <option>初めて使う</option>
+            </select>
+          </label>
+          <label>運搬方法<textarea rows="2" id="tool-transport" placeholder="例：軽ワゴン、歩み板あり、2人で積み降ろし"></textarea></label>
+          <label>貸し手への補足（任意）<textarea rows="3" id="tool-borrower-note"></textarea></label>
+          <label class="check-field"><input type="checkbox" id="tool-terms" /> <span>状態・料金・消耗品・運搬条件を確認しました。契約、精算、故障・修理の協議は当事者間で行い、故障時は使用を止め、合意前に修理しません。</span></label>
+          <p class="form-error" data-equipment-request-error hidden></p>
+          ${canSave ? `<button class="button button-primary" type="button" data-equipment-request data-id="${item.id}">貸し手へ申請する</button>` : `<button class="button button-primary" type="button" disabled>申請する（ログイン・DB更新が必要）</button>`}
+        </form>
+        <aside class="side-panel">
+          <h3>申請後の流れ</h3>
+          <ol class="number-list"><li>貸し手が内容を確認</li><li>承認後、案件内で受渡連絡を確認</li><li>受渡時に状態と操作を双方で確認</li><li>返却時にもう一度状態を確認</li></ol>
+          <p>一般的なDMはありません。この貸し借りに必要な連絡だけを扱います。</p>
+        </aside>
+      </div>
     `,
   });
 };
@@ -846,6 +1105,7 @@ const renderEventDetail = (id) => {
   if (!event) return renderNotFound("イベントが見つかりません", "#/events");
 
   const host = groupById(event.hostGroupId);
+  const hostPageLabel = host?.entityType === "farmer" ? "農園ページ" : "団体ページ";
 
   return pageFrame({
     eyebrow: "Event Detail",
@@ -887,7 +1147,7 @@ const renderEventDetail = (id) => {
           ${event.seedExchange ? seedExchangeRulesBlock() : ""}
           ${
             eventStatus(event) === "past"
-              ? `<p class="past-note">このイベントは終了しました。次回の予定は<a class="text-link" href="${host ? `#/groups/${host.id}` : "#/events"}">団体ページ</a>や季節の便りでお知らせします。</p>`
+              ? `<p class="past-note">このイベントは終了しました。次回の予定は<a class="text-link" href="${host ? `#/groups/${host.id}` : "#/events"}">${hostPageLabel}</a>や季節の便りでお知らせします。</p>`
               : `<div class="action-row">
                    ${actionButton({ kind: "interested", id: event.id, on: "気になるに追加済み", off: "気になる" })}
                    ${actionButton({ kind: "joined", id: event.id, on: "予定メモに入れました", off: "予定メモに入れる", primary: true })}
@@ -895,10 +1155,10 @@ const renderEventDetail = (id) => {
                  <p class="interested-count" data-interested-count="${event.id}" data-base="${event.interestedCount || 0}">${interestedTotal(event)}人が「気になる」を押しています</p>
                  ${actionGuide([
                    { label: "気になる", text: "あとで見返すための印です。申込や連絡は発生しません。" },
-                   { label: "予定メモ", text: "マイページに残る自分用メモです。正式な申込確定は主催団体からの案内で行います。" },
+                   { label: "予定メモ", text: "マイページに残る自分用メモです。正式な申込確定は主催者からの案内で行います。" },
                  ])}`
           }
-          ${host ? `<div class="corner-action"><a class="card-action" href="#/groups/${host.id}">開催団体を見る</a></div>` : ""}
+          ${host ? `<div class="corner-action"><a class="card-action" href="#/groups/${host.id}">主催者を見る</a></div>` : ""}
         </div>
       </article>
 
@@ -910,7 +1170,7 @@ const renderEventDetail = (id) => {
           .slice(0, 2);
         return others.length
           ? `<section class="section-block">
-              ${sectionHeading("calendar", "More Events", "この団体のほかのイベント", "予定が合わなくても、別の回から参加できます。")}
+              ${sectionHeading("calendar", "More Events", `この${host?.entityType === "farmer" ? "農園" : "団体"}のほかのイベント`, "予定が合わなくても、別の回から参加できます。")}
               <div class="card-grid event-grid">${others.map((item) => eventCard(item, true)).join("")}</div>
             </section>`
           : "";
@@ -921,7 +1181,8 @@ const renderEventDetail = (id) => {
 
 const renderGroupDetail = (id) => {
   const group = groupById(id);
-  if (!group) return renderNotFound("団体が見つかりません", "#/members");
+  if (!group) return renderNotFound("農家・団体が見つかりません", "#/members");
+  const subjectLabel = group.entityType === "farmer" ? "農家・農園" : "団体・活動者";
 
   const byDate = (a, b) => (parseEventDate(a.date) ?? 0) - (parseEventDate(b.date) ?? 0);
   const allGroupEvents = eventsByGroup(id);
@@ -932,19 +1193,19 @@ const renderGroupDetail = (id) => {
   const groupSeeds = seedsByGroup(id);
 
   return pageFrame({
-    eyebrow: "Group / Activity",
+    eyebrow: group.entityType === "farmer" ? "Farm Profile" : "Group / Activity",
     title: group.displayName,
-    copy: "地域で活動している団体・活動者の紹介ページです。直接の連絡先や畑の正確な場所は表示しません。つながりはイベント参加から始まります。",
+    copy: `地域で活動している${subjectLabel}の紹介ページです。直接の連絡先や畑の正確な場所は表示しません。つながりはイベント参加から始まります。`,
     actions: `
       ${backLink("#/members", "仲間一覧へ戻る")}
-      <a class="button button-light" href="#/manage/group">情報を編集（団体向け）</a>
-      <a class="button button-ghost" href="#/manage/event">イベントを登録（団体向け）</a>
+      <a class="button button-light" href="#/manage/group">情報を編集（主催者向け）</a>
+      <a class="button button-ghost" href="#/manage/event">イベントを登録（主催者向け）</a>
     `,
     body: `
       <article class="detail-card">
         <div class="detail-visual ${group.photo}" aria-hidden="true"></div>
         <div class="detail-body">
-          <span class="privacy-note">団体・活動者</span>
+          <span class="privacy-note">${subjectLabel}</span>
           <p>${escapeHtml(group.area)}｜${escapeHtml(group.status)}</p>
           <div class="tag-row">${renderTags(group.methods)}</div>
           <p class="rhythm-line"><strong>活動リズム：</strong>${escapeHtml(group.rhythm)}</p>
@@ -955,17 +1216,17 @@ const renderGroupDetail = (id) => {
           <div class="action-row">
             ${actionButton({ kind: "following", id: group.id, on: "活動を受け取り中", off: "活動を受け取る" })}
           </div>
-          <p class="form-help">「活動を受け取る」と、この団体がマイページにまとまり、季節の便りや新しいイベントを見逃しにくくなります（メール等の通知はありません）。</p>
+          <p class="form-help">「活動を受け取る」と、この${group.entityType === "farmer" ? "農園" : "団体"}がマイページにまとまり、季節の便りや新しいイベントを見逃しにくくなります（メール等の通知はありません）。</p>
           <h2>公式リンク</h2>
           ${officialLinks(group.links) || "<p>公式リンクは未登録です。</p>"}
-          <p class="form-help">公式リンクは団体自身が管理ページで登録したものです。第三者が勝手に登録することはできません。</p>
+          <p class="form-help">公式リンクは${group.entityType === "farmer" ? "農家" : "団体"}自身が管理ページで登録したものです。第三者が勝手に登録することはできません。</p>
         </div>
       </article>
 
       ${updatesBlock(group.updates)}
 
       <section class="section-block">
-        ${sectionHeading("calendar", "Group Events", "この団体のイベント")}
+        ${sectionHeading("calendar", "Hosted Events", `この${group.entityType === "farmer" ? "農園" : "団体"}のイベント`)}
         ${
           groupEvents.length
             ? `<div class="card-grid event-grid">${groupEvents.map((event) => eventCard(event)).join("")}</div>`
@@ -973,7 +1234,7 @@ const renderGroupDetail = (id) => {
         }
       </section>
 
-      ${relatedSeedsBlock(groupSeeds.map((seed) => seed.id), "この団体が関わる在来種")}
+      ${relatedSeedsBlock(groupSeeds.map((seed) => seed.id), `この${group.entityType === "farmer" ? "農園" : "団体"}が関わる在来種`)}
     `,
   });
 };
@@ -1608,6 +1869,14 @@ const renderMyPage = () => {
       </section>
 
       <section class="section-block">
+        ${sectionHeading("tools", "Tool Share", "農具の貸し借り", "掲載、利用申請、受渡、返却を案件ごとに確認します。")}
+        <a class="route-card" href="#/manage/tools">
+          <span class="route-icon">${svgIcon("tools")}</span>
+          <span><h3>貸し借りの状況を見る</h3><p>貸す農具 ${myEquipmentListings?.length || 0}件｜借りる申請 ${myBorrowRequests?.length || 0}件</p></span>
+        </a>
+      </section>
+
+      <section class="section-block">
         ${sectionHeading("calendar", "Interested", "気になっているイベント", "「気になる」を押したイベントがここに集まります。")}
         ${
           interestedEvents.length
@@ -1761,9 +2030,9 @@ const renderNotFound = (message = "画面が見つかりません", href = "#/ho
 
 const renderManageHome = () =>
   pageFrame({
-    eyebrow: "団体向け管理",
-    title: "団体メニュー",
-    copy: "団体・活動者が、自分たちのプロフィールとイベントを登録・編集する画面です。新規の団体は申請後、運営の審査を経て掲載されます。",
+    eyebrow: "主催者・貸し手向け管理",
+    title: "活動メニュー",
+    copy: "農家・団体・個人が、プロフィール、イベント、貸し出す農具を管理する画面です。公開情報は運営確認を経て掲載されます。",
     actions: backLink("#/members", "仲間一覧へ戻る"),
     body: `
       ${manageNoticeBlock()}
@@ -1771,11 +2040,11 @@ const renderManageHome = () =>
         <div>
           <p class="eyebrow">Start Here</p>
           <h2>掲載までの次の一手</h2>
-          <p>団体は、まずプロフィール申請から始まります。イベント登録は、団体が掲載中になってから使えます。</p>
+          <p>イベントを開く農家・団体はプロフィール申請から始めます。個人の農具掲載はプロフィール登録後に申請できます。</p>
         </div>
         <ol>
           <li class="${!session ? "is-current" : ""}"><strong>ログイン</strong><span>メールだけで本人確認します。</span></li>
-          <li class="${session && !(myGroups || []).length ? "is-current" : ""}"><strong>団体申請</strong><span>活動地域・方針・公式リンクを登録します。</span></li>
+          <li class="${session && !(myGroups || []).length ? "is-current" : ""}"><strong>活動主体を申請</strong><span>農家・農園、または団体として登録します。</span></li>
           <li class="${(myGroups || []).some((group) => group.status === "pending") ? "is-current" : ""}"><strong>運営審査</strong><span>承認されるまで一般公開されません。</span></li>
           <li class="${myApprovedGroup() ? "is-current" : ""}"><strong>イベント登録</strong><span>掲載中の団体だけが申請できます。</span></li>
         </ol>
@@ -1793,15 +2062,22 @@ const renderManageHome = () =>
         <a class="route-card" href="#/manage/group">
           <span class="route-icon">${svgIcon("users")}</span>
           <span>
-            <h3>団体プロフィールを登録・編集</h3>
-            <p>まずここから申請します。承認後に「仲間を探す」へ掲載されます。</p>
+            <h3>農家・団体プロフィールを登録・編集</h3>
+            <p>イベントを開く方はこちら。承認後に「仲間を探す」へ掲載されます。</p>
           </span>
         </a>
         <a class="route-card" href="#/manage/event">
           <span class="route-icon">${svgIcon("calendar")}</span>
           <span>
             <h3>イベントを登録</h3>
-            <p>掲載中の団体だけが使えます。登録後、運営確認を経て公開されます。</p>
+            <p>掲載中の農家・団体が使えます。登録後、運営確認を経て公開されます。</p>
+          </span>
+        </a>
+        <a class="route-card" href="#/manage/tools">
+          <span class="route-icon">${svgIcon("tools")}</span>
+          <span>
+            <h3>農具の掲載・貸し借りを管理</h3>
+            <p>個人、農家、団体が利用できます。無料・有料を選び、申請や受渡状況を確認します。</p>
           </span>
         </a>
       </div>
@@ -1858,6 +2134,7 @@ const renderManageGroup = () => {
   const group = (myGroups || [])[0] || null;
   const canSave = signedIn;
   const v = {
+    entityType: group ? group.entity_type || "group" : "group",
     name: group ? group.display_name : canSave ? "" : "小さな畝の会",
     area: group ? group.area : canSave ? "" : "笠間市",
     methods: group ? group.methods || [] : ["自然農"],
@@ -1873,19 +2150,26 @@ const renderManageGroup = () => {
   const status = group ? GROUP_STATUS_LABELS[group.status] : null;
 
   return pageFrame({
-    eyebrow: "団体向け管理",
-    title: "団体プロフィール登録・編集",
-    copy: "「仲間を探す」に表示される団体情報を登録・編集します。新規の掲載は運営の承認後に始まります。",
-    actions: backLink("#/manage", "団体メニューへ戻る"),
+    eyebrow: "主催者向け管理",
+    title: "農家・団体プロフィール登録・編集",
+    copy: "「仲間を探す」に表示される農家・農園、団体・サークルの情報を登録します。新規掲載は運営の承認後に始まります。",
+    actions: backLink("#/manage", "活動メニューへ戻る"),
     body: `
       ${manageNoticeBlock()}
       ${!signedIn ? `<p class="form-help">団体を申請するには、<a class="text-link" href="#/mypage">マイページからログイン</a>してください。</p>` : ""}
       ${status ? `<p class="badge-row"><span class="tag ${status.cls}">${escapeHtml(status.label)}</span></p>` : ""}
       <div class="note-layout">
-        <form class="note-form" aria-label="団体プロフィール入力フォーム">
+        <form class="note-form" aria-label="農家・団体プロフィール入力フォーム">
           <label>
-            団体・活動者名
-            <input type="text" id="g-name" value="${escapeHtml(v.name)}" placeholder="例：小さな畝の会" />
+            活動主体
+            <select id="g-entity-type">
+              <option value="group"${v.entityType === "group" ? " selected" : ""}>団体・サークル</option>
+              <option value="farmer"${v.entityType === "farmer" ? " selected" : ""}>農家・農園</option>
+            </select>
+          </label>
+          <label>
+            表示名
+            <input type="text" id="g-name" value="${escapeHtml(v.name)}" placeholder="例：小さな畝の会 / みどり農園" />
           </label>
           <label>
             活動地域（市町村程度）
@@ -1938,7 +2222,7 @@ const renderManageGroup = () => {
             ロゴ・写真（任意）
             <span class="fake-upload">写真は今後対応予定です</span>
           </label>
-          <p class="form-help">公開されるのは市町村程度の地域までです。詳細住所・個人の連絡先は登録・表示しません。</p>
+          <p class="form-help">公開されるのは市町村程度の地域までです。詳細住所・個人の連絡先は登録・表示しません。農法は本人申告として表示し、有機JAS認証を示す表示は運営確認なしに付けません。</p>
           <p class="form-error" data-group-error hidden></p>
           ${
             canSave
@@ -1948,8 +2232,8 @@ const renderManageGroup = () => {
         </form>
         <aside class="side-panel">
           <h3>登録の方針</h3>
-          <p>公式リンクは団体自身が登録します。第三者が勝手に登録することはできません。</p>
-          <p>団体アカウントは運営の審査・承認を経て発行されます。</p>
+          <p>公式リンクは農家・団体自身が登録します。第三者が勝手に登録することはできません。</p>
+          <p>農家・団体プロフィールは運営の審査・承認を経て掲載されます。</p>
           <div class="tag-row">
             <span class="tag">団体が登録</span>
             <span class="tag">運営審査</span>
@@ -1988,23 +2272,23 @@ const renderManageEventForm = () => {
   const gate = !signedIn
     ? `<p class="form-help">イベントを登録するには、<a class="text-link" href="#/mypage">マイページからログイン</a>してください。</p>`
     : !group
-      ? `<p class="form-help">イベントを登録できるのは承認済み団体のみです。まず<a class="text-link" href="#/manage/group">団体プロフィールを申請</a>し、運営の承認をお待ちください。</p>`
+      ? `<p class="form-help">イベントを登録できるのは承認済みの農家・団体のみです。まず<a class="text-link" href="#/manage/group">プロフィールを申請</a>し、運営の承認をお待ちください。</p>`
       : "";
 
   return pageFrame({
-    eyebrow: "団体向け管理",
+    eyebrow: "主催者向け管理",
     title: "イベント登録",
     copy: canSave
       ? "登録したイベントは運営の確認後に公開されます。"
-      : "団体が新しいイベントを登録するフォームです。登録は承認済み団体のみ可能です。",
-    actions: backLink("#/manage", "団体メニューへ戻る"),
+      : "農家・団体が新しいイベントを登録するフォームです。登録は承認済みの活動主体のみ可能です。",
+    actions: backLink("#/manage", "活動メニューへ戻る"),
     body: `
       ${manageNoticeBlock()}
       ${gate}
       <div class="note-layout">
         <form class="note-form" aria-label="イベント登録フォーム">
           <div class="field">
-            <span class="field-label">開催団体</span>
+            <span class="field-label">主催者</span>
             <span class="static-field">${escapeHtml(group ? group.display_name : "小さな畝の会（サンプル表示）")}</span>
           </div>
           <label>
@@ -2079,15 +2363,15 @@ const renderManageEventForm = () => {
           ${
             canSave
               ? `<button class="button button-primary" type="button" data-event-save>登録を申請する（運営確認後に公開）</button>`
-              : `<button class="button button-primary" type="button" disabled>登録する（承認済み団体のみ）</button>`
+              : `<button class="button button-primary" type="button" disabled>登録する（承認済み農家・団体のみ）</button>`
           }
         </form>
         <aside class="side-panel">
           <h3>登録の注意</h3>
           <p>イベントは運営確認のうえ公開されます。</p>
-          <p>誰でも自由に作成できる仕様ではなく、承認済み団体のみ登録できます。</p>
+          <p>誰でも自由に作成できる仕様ではなく、承認済みの農家・団体のみ登録できます。</p>
           <div class="tag-row">
-            <span class="tag">承認済み団体のみ</span>
+            <span class="tag">承認済み主催者のみ</span>
             <span class="tag">運営確認</span>
             <span class="tag">位置情報は段階公開</span>
           </div>
@@ -2097,9 +2381,178 @@ const renderManageEventForm = () => {
   });
 };
 
+const renderManageEquipment = () => {
+  const signedIn = Boolean(session && dbConnected() && window.NOU_API?.enabled);
+  if (!signedIn) {
+    return pageFrame({
+      eyebrow: "Tool Share",
+      title: "農具の貸し借りを管理",
+      copy: "掲載、利用申請、受渡、返却を案件ごとに確認します。",
+      actions: backLink("#/manage", "活動メニューへ戻る"),
+      body: `<p class="empty-note">利用するには<a class="text-link" href="#/mypage">ログイン</a>してください。</p>`,
+    });
+  }
+
+  const listingRows = myEquipmentListings || [];
+  const inbound = equipmentRequestsForOwner || [];
+  const borrowed = myBorrowRequests || [];
+  const moderationLabel = { pending: "運営確認待ち", approved: "掲載中", rejected: "掲載見送り" };
+
+  return pageFrame({
+    eyebrow: "Tool Share",
+    title: "農具の貸し借りを管理",
+    copy: "貸し手・借り手の双方が、同じ案件の状態を確認できます。一般DMや運営による賠償仲裁はありません。",
+    actions: `${backLink("#/manage", "活動メニューへ戻る")}<a class="button button-primary" href="#/manage/tools/new">農具を掲載する</a>`,
+    body: `
+      ${manageNoticeBlock()}
+      ${myEquipmentListings === null ? `<p class="form-help">農具シェア用DBが未適用の場合、実データは表示されません。画面とSQL適用後に利用できます。</p>` : ""}
+      <section class="section-block">
+        ${sectionHeading("tools", "My Listings", "貸し出す農具", "掲載内容は運営確認後に一般公開されます。")}
+        ${
+          listingRows.length
+            ? `<div class="stack-list">${listingRows
+                .map(
+                  (item) => `<article class="management-card">
+                    <div><div class="tag-row"><span class="tag">${escapeHtml(moderationLabel[item.moderation_status] || item.moderation_status)}</span><span class="tag">${escapeHtml(item.availability_status === "available" ? "受付中" : item.availability_status === "paused" ? "受付停止" : item.availability_status === "loaned" ? "貸出中" : "終了")}</span></div><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.area)}｜${escapeHtml(item.fee_type === "free" ? "無料" : `${Number(item.fee_amount).toLocaleString("ja-JP")}円／${EQUIPMENT_FEE_UNIT_LABELS[item.fee_unit] || "1日"}`)}</p></div>
+                    <div class="action-row">
+                      ${item.moderation_status === "approved" && item.availability_status !== "archived" ? `<button type="button" class="button button-light" data-equipment-availability data-id="${item.id}" data-status="${item.availability_status === "available" ? "paused" : "available"}">${item.availability_status === "available" ? "受付を止める" : "受付を再開"}</button>` : ""}
+                    </div>
+                  </article>`,
+                )
+                .join("")}</div>`
+            : `<p class="empty-note">まだ掲載申請はありません。</p>`
+        }
+      </section>
+
+      <section class="section-block">
+        ${sectionHeading("users", "Requests To You", "あなたへの利用申請", "承認後に、この案件だけで使う受渡連絡を入力します。")}
+        ${
+          inbound.length
+            ? `<div class="stack-list">${inbound.map((request) => equipmentOwnerRequestCard(request)).join("")}</div>`
+            : `<p class="empty-note">確認待ちの利用申請はありません。</p>`
+        }
+      </section>
+
+      <section class="section-block">
+        ${sectionHeading("calendar", "Your Requests", "あなたが借りる申請", "貸し手の承認状況と受渡連絡を確認できます。")}
+        ${
+          borrowed.length
+            ? `<div class="stack-list">${borrowed.map((request) => equipmentBorrowRequestCard(request)).join("")}</div>`
+            : `<p class="empty-note">借りる申請はまだありません。<a class="text-link" href="#/tools">農具を探す</a></p>`
+        }
+      </section>
+    `,
+  });
+};
+
+const equipmentOwnerRequestCard = (request) => {
+  const status = EQUIPMENT_REQUEST_STATUS[request.status] || request.status;
+  return `<article class="management-card request-card">
+    <div>
+      <div class="tag-row"><span class="tag">${escapeHtml(status)}</span></div>
+      <h3>${escapeHtml(request.listing?.title || "農具")}</h3>
+      <p><strong>申請者：</strong>${escapeHtml(request.borrower?.nickname || "登録ユーザー")}（${escapeHtml(request.borrower?.area || "地域未設定")}）</p>
+      <p><strong>希望：</strong>${escapeHtml(request.start_on)} 〜 ${escapeHtml(request.end_on)}</p>
+      <p><strong>目的：</strong>${escapeHtml(request.purpose || "未記入")}</p>
+      <p><strong>経験：</strong>${escapeHtml(request.experience || "未記入")}</p>
+      <p><strong>運搬：</strong>${escapeHtml(request.transport_plan || "未記入")}</p>
+      ${request.borrower_note ? `<p><strong>補足：</strong>${escapeHtml(request.borrower_note)}</p>` : ""}
+      ${request.lender_contact ? `<p class="private-contact"><strong>受渡連絡：</strong>${escapeHtml(request.lender_contact)}</p>` : ""}
+      ${request.handover_condition ? `<p><strong>受渡時の状態：</strong>${escapeHtml(request.handover_condition)}</p>` : ""}
+      ${request.return_condition ? `<p><strong>返却時の状態：</strong>${escapeHtml(request.return_condition)}</p>` : ""}
+      ${request.incident_note ? `<p class="incident-note"><strong>使用停止時の記録：</strong>${escapeHtml(request.incident_note)}</p>` : ""}
+    </div>
+    <div class="request-actions">
+      ${
+        request.status === "pending"
+          ? `<label>承認後に見せる受渡連絡<input type="text" id="request-contact-${request.id}" placeholder="例：受渡候補場所、連絡方法" /></label><div class="action-row"><button class="button button-primary" type="button" data-equipment-request-action="approve" data-id="${request.id}">承認する</button><button class="button button-light" type="button" data-equipment-request-action="decline" data-id="${request.id}">見送る</button></div>`
+          : request.status === "approved"
+            ? `<label>受渡時の状態<input type="text" id="handover-condition-${request.id}" placeholder="外観、始動・停止、傷、付属品" /></label><button class="button button-primary" type="button" data-equipment-request-action="handover" data-id="${request.id}">双方で確認して貸出開始</button>`
+            : request.status === "handed_over" || request.status === "incident"
+              ? `<label>返却時の状態<input type="text" id="return-condition-${request.id}" placeholder="外観、動作、消耗、修理相談の有無" /></label><button class="button button-primary" type="button" data-equipment-request-action="return" data-id="${request.id}">双方で確認して返却完了</button>`
+              : ""
+      }
+    </div>
+  </article>`;
+};
+
+const equipmentBorrowRequestCard = (request) => {
+  const listing = request.listing || {};
+  const ownerName = listing.group?.display_name || listing.owner?.nickname || "貸し手";
+  return `<article class="management-card request-card">
+    <div>
+      <div class="tag-row"><span class="tag">${escapeHtml(EQUIPMENT_REQUEST_STATUS[request.status] || request.status)}</span></div>
+      <h3>${escapeHtml(listing.title || "農具")}</h3>
+      <p>${escapeHtml(request.start_on)} 〜 ${escapeHtml(request.end_on)}｜貸し手：${escapeHtml(ownerName)}</p>
+      ${request.lender_contact && ["approved", "handed_over", "incident", "returned"].includes(request.status) ? `<p class="private-contact"><strong>受渡連絡：</strong>${escapeHtml(request.lender_contact)}</p>` : ""}
+      ${request.handover_condition ? `<p><strong>受渡時の状態：</strong>${escapeHtml(request.handover_condition)}</p>` : ""}
+      ${request.return_condition ? `<p><strong>返却時の状態：</strong>${escapeHtml(request.return_condition)}</p>` : ""}
+      ${request.incident_note ? `<p class="incident-note"><strong>使用停止時の記録：</strong>${escapeHtml(request.incident_note)}</p>` : ""}
+    </div>
+    ${request.status === "pending" ? `<button class="button button-light" type="button" data-equipment-request-action="cancel" data-id="${request.id}">申請を取り消す</button>` : request.status === "handed_over" ? `<div class="request-actions"><label>故障・異常の状態<textarea rows="2" id="incident-note-${request.id}" placeholder="いつ、どの操作中に、どんな音や動きがあったか"></textarea></label><button class="button button-light" type="button" data-equipment-request-action="incident" data-id="${request.id}">使用を止めて貸し手へ知らせる</button></div>` : ""}
+  </article>`;
+};
+
+const renderManageEquipmentForm = () => {
+  const signedIn = Boolean(session && dbConnected() && window.NOU_API?.enabled && myProfile);
+  const approvedGroups = (myGroups || []).filter((group) => group.status === "approved");
+  return pageFrame({
+    eyebrow: "List A Tool",
+    title: "貸し出す農具を掲載",
+    copy: "個人、承認済みの農家・団体が掲載できます。一般公開は運営の安全確認後です。",
+    actions: backLink("#/manage/tools", "貸し借りの管理へ戻る"),
+    body: `
+      ${!signedIn ? `<p class="form-help">掲載申請には<a class="text-link" href="#/mypage">ログインとプロフィール登録</a>が必要です。</p>` : ""}
+      <div class="note-layout">
+        <form class="note-form" aria-label="農具掲載フォーム">
+          <label>貸し手として表示する名前
+            <select id="t-owner">
+              <option value="personal">個人：${escapeHtml(myProfile?.nickname || "自分のプロフィール")}</option>
+              ${approvedGroups.map((group) => `<option value="${group.id}">${group.entity_type === "farmer" ? "農家・農園" : "団体"}：${escapeHtml(group.display_name)}</option>`).join("")}
+            </select>
+          </label>
+          <label>農具名<input type="text" id="t-title" maxlength="80" placeholder="例：小型管理機 2.2馬力" /></label>
+          <label>種類
+            <select id="t-category"><option value="hand_tool">手動農具</option><option value="small_powered">小型管理機・歩行型耕運機</option><option value="material">農業資材</option></select>
+          </label>
+          <label>受渡地域（市町村程度）<input type="text" id="t-area" placeholder="例：笠間市周辺" /></label>
+          <div class="two-field"><label>メーカー<input type="text" id="t-maker" /></label><label>型式<input type="text" id="t-model" /></label></div>
+          <label>使用年数<input type="text" id="t-years" placeholder="例：5年" /></label>
+          <label>最終点検日<input type="date" id="t-inspected" /></label>
+          <label>現在の状態<input type="text" id="t-condition" placeholder="例：始動・停止・ロータリー確認済み" /></label>
+          <label>既知の不具合・癖<textarea rows="3" id="t-issues" placeholder="始動方法、傷、異音、詰まりやすさなど。ない場合も「特になし」と記入"></textarea></label>
+          <label class="check-field"><input type="checkbox" id="t-manual" /> <span>取扱説明書を一緒に渡せる</span></label>
+          <fieldset class="field"><legend class="field-label">貸出料金</legend><span class="choice-row"><label><input type="radio" name="t-fee-type" value="free" checked /> 無料</label><label><input type="radio" name="t-fee-type" value="paid" /> 有料</label></span></fieldset>
+          <div id="t-paid-fields" class="two-field" hidden><label>金額（円）<input type="number" id="t-fee-amount" min="1" /></label><label>単位<select id="t-fee-unit"><option value="half_day">半日</option><option value="day" selected>1日</option><option value="week">1週間</option></select></label></div>
+          <label>料金・燃料の補足<textarea rows="2" id="t-fee-note" placeholder="無料の場合の交通費、有料の場合の燃料代など"></textarea></label>
+          <label>消耗品の扱い<select id="t-consumables"><option value="owner">通常使用分は貸し手負担</option><option value="included">貸出料金に含む</option><option value="actual_cost">使用分を当事者間で確認</option></select></label>
+          <label class="check-field"><input type="checkbox" id="t-experience" /> <span>使用経験がある人に限る</span></label>
+          <label>運搬・積み降ろし条件<textarea rows="3" id="t-transport" placeholder="重量、必要人数、歩み板、公道走行不可など"></textarea></label>
+          <label>農具の説明<textarea rows="3" id="t-description"></textarea></label>
+          <label>貸し手からの条件・注意事項<textarea rows="3" id="t-terms" placeholder="利用できる畑、清掃、返却時刻など"></textarea></label>
+          <label class="check-field safety-check"><input type="checkbox" id="t-safety" /> <span>故障品・改造品・リコール対象品ではなく、貸出前に動作と安全状態を確認します。小型動力農機は受渡時に始動・停止方法を説明します。</span></label>
+          <p class="form-error" data-equipment-listing-error hidden></p>
+          ${signedIn ? `<button class="button button-primary" type="button" data-equipment-listing-save>運営確認へ申請する</button>` : `<button class="button button-primary" type="button" disabled>申請する（ログインが必要）</button>`}
+        </form>
+        <aside class="side-panel">
+          <h3>掲載できない機械</h3>
+          <p>乗用型・大型農機、刈払機、チェーンソー、高所作業機、農薬散布機、公道走行を伴う機械は対象外です。</p>
+          <h3>修理の基本</h3>
+          <p>通常摩耗・経年劣化は原則貸し手、説明と異なる使用や明らかな操作ミスは原則借り手。原因が分からない場合は修理店の見積もりを双方で確認します。</p>
+          <p>運営は責任割合・賠償額を判定しません。</p>
+        </aside>
+      </div>
+    `,
+  });
+};
+
 const routeTable = {
   home: () => renderHome(),
   members: () => renderMembers(),
+  tools: (parts) => {
+    if (parts[2] === "request" && parts[1]) return renderEquipmentRequestForm(parts[1]);
+    return parts[1] ? renderToolDetail(parts[1]) : renderTools();
+  },
   groups: (parts) => renderGroupDetail(parts[1]),
   events: (parts) => (parts[1] ? renderEventDetail(parts[1]) : renderEvents()),
   learn: (parts) => (parts[1] ? renderMethodDetail(parts[1]) : renderLearn()),
@@ -2115,6 +2568,8 @@ const routeTable = {
   manage: (parts) => {
     if (parts[1] === "group") return renderManageGroup();
     if (parts[1] === "event") return renderManageEventForm();
+    if (parts[1] === "tools" && parts[2] === "new") return renderManageEquipmentForm();
+    if (parts[1] === "tools") return renderManageEquipment();
     if (parts[1] === "admin") return renderAdminQueue();
     return renderManageHome();
   },
@@ -2123,12 +2578,16 @@ const routeTable = {
 // ---- 運営の承認キュー（P2-4）----
 let adminQueue = null;
 const loadAdminQueue = async () => {
-  const [pendingGroups, pendingEvents, pendingContributions] = await Promise.all([
+  const [pendingGroups, pendingEvents, pendingContributions, pendingEquipment] = await Promise.all([
     window.NOU_API.fetchPendingGroups(),
     window.NOU_API.fetchPendingEvents(),
     window.NOU_API.fetchPendingContributions(),
+    window.NOU_API.fetchPendingEquipment().catch((error) => {
+      console.warn("農具掲載の承認キューはDB更新後に有効になります。", error);
+      return [];
+    }),
   ]);
-  adminQueue = { groups: pendingGroups, events: pendingEvents, contributions: pendingContributions };
+  adminQueue = { groups: pendingGroups, events: pendingEvents, contributions: pendingContributions, equipment: pendingEquipment };
 };
 
 const renderAdminQueue = () => {
@@ -2149,7 +2608,7 @@ const renderAdminQueue = () => {
   return pageFrame({
     eyebrow: "運営",
     title: "承認キュー",
-    copy: "団体の承認と、イベントの公開を行います。承認・公開すると即座にサイトに表示されます。",
+    copy: "農家・団体、イベント、農具掲載の確認を行います。承認・公開すると即座にサイトに表示されます。",
     actions: `
       ${backLink("#/manage", "団体メニューへ戻る")}
       <button class="button button-light" type="button" data-admin="reload">再読み込み</button>
@@ -2157,7 +2616,7 @@ const renderAdminQueue = () => {
     body: `
       ${manageNoticeBlock()}
       <section class="section-block">
-        ${sectionHeading("users", "Groups", "承認待ちの団体", "活動の実在性と方針への同意を確認してから承認します。")}
+        ${sectionHeading("users", "Hosts", "承認待ちの農家・団体", "活動の実在性と方針への同意を確認してから承認します。")}
         ${
           adminQueue.groups.length
             ? adminQueue.groups
@@ -2166,7 +2625,7 @@ const renderAdminQueue = () => {
                     <article class="detail-card admin-card">
                       <div class="detail-body">
                         <h3>${escapeHtml(group.display_name)}</h3>
-                        <p>${escapeHtml(group.area)}｜${escapeHtml(group.stage || "")}</p>
+                        <p>${group.entity_type === "farmer" ? "農家・農園" : "団体・サークル"}｜${escapeHtml(group.area)}｜${escapeHtml(group.stage || "")}</p>
                         <div class="tag-row">${renderTags(group.methods || [])}</div>
                         <p>${escapeHtml(group.note || "")}</p>
                         <div class="action-row">
@@ -2178,7 +2637,27 @@ const renderAdminQueue = () => {
                   `,
                 )
                 .join("")
-            : `<p class="empty-note">承認待ちの団体はありません。</p>`
+            : `<p class="empty-note">承認待ちの農家・団体はありません。</p>`
+        }
+      </section>
+      <section class="section-block">
+        ${sectionHeading("tools", "Tool Listings", "確認待ちの農具掲載", "対象機種、点検、既知の不具合、運搬条件、安全確認を見て判断します。")}
+        ${
+          (adminQueue.equipment || []).length
+            ? adminQueue.equipment
+                .map(
+                  (item) => `<article class="detail-card admin-card"><div class="detail-body">
+                    <h3>${escapeHtml(item.title)}</h3>
+                    <p>${escapeHtml(EQUIPMENT_CATEGORY_LABELS[item.category] || item.category)}｜${escapeHtml(item.area)}｜貸し手：${escapeHtml(item.group?.display_name || item.owner?.nickname || "登録ユーザー")}</p>
+                    <p>${escapeHtml(item.description || "")}</p>
+                    <dl class="detail-list"><div><dt>料金</dt><dd>${item.fee_type === "free" ? "無料" : `${Number(item.fee_amount).toLocaleString("ja-JP")}円／${EQUIPMENT_FEE_UNIT_LABELS[item.fee_unit] || "1日"}`}</dd></div><div><dt>最終点検</dt><dd>${escapeHtml(item.last_inspected_on || "未記入")}</dd></div><div><dt>状態</dt><dd>${escapeHtml(item.condition_label || "未記入")}</dd></div><div><dt>経験条件</dt><dd>${item.experience_required ? "経験者のみ" : "指定なし"}</dd></div></dl>
+                    <p><strong>既知の不具合：</strong>${escapeHtml(item.known_issues || "特記事項なし")}</p>
+                    <p><strong>運搬条件：</strong>${escapeHtml(item.transport_note || "未記入")}</p>
+                    <div class="action-row"><button class="button button-primary" type="button" data-admin="approve-equipment" data-id="${item.id}">承認して掲載する</button><button class="button button-light" type="button" data-admin="reject-equipment" data-id="${item.id}">見送る</button></div>
+                  </div></article>`,
+                )
+                .join("")
+            : `<p class="empty-note">確認待ちの農具掲載はありません。</p>`
         }
       </section>
       <section class="section-block">
@@ -2239,8 +2718,10 @@ const rootRouteFor = (parts) => parts[0] ?? "home";
 const updateActiveNav = (rootRoute) => {
   document.querySelectorAll("[data-route]").forEach((link) => {
     const route = link.dataset.route;
+    const also = (link.dataset.routeAlso || "").split(" ").filter(Boolean);
     const isActive =
       route === rootRoute ||
+      also.includes(rootRoute) ||
       (route === "members" && rootRoute === "groups") ||
       (route === "learn" && (rootRoute === "native-map" || rootRoute === "native-varieties" || rootRoute === "techniques"));
 
@@ -2352,12 +2833,13 @@ app.addEventListener("click", (event) => {
     const area = (document.querySelector("#g-area")?.value || "").trim();
     if (!name || !area) {
       if (errorEl) {
-        errorEl.textContent = "団体名と活動地域を入れてください。";
+        errorEl.textContent = "表示名と活動地域を入れてください。";
         errorEl.hidden = false;
       }
       return;
     }
     const payload = {
+      entity_type: document.querySelector("#g-entity-type")?.value || "group",
       display_name: name,
       area,
       methods: [...document.querySelectorAll('input[name="g-method"]:checked')].map((el) => el.value),
@@ -2413,7 +2895,7 @@ app.addEventListener("click", (event) => {
     window.NOU_API.createGroupUpdate(updateSend.dataset.groupId, title, body)
       .then(async () => {
         await hydrateFromApi();
-        manageNotice = "便りを届けました。団体ページとホームに表示されます。";
+        manageNotice = "便りを届けました。主催者ページとホームに表示されます。";
         renderApp();
       })
       .catch((error) => {
@@ -2478,6 +2960,183 @@ app.addEventListener("click", (event) => {
     return;
   }
 
+  const equipmentListingSave = event.target.closest("[data-equipment-listing-save]");
+  if (equipmentListingSave) {
+    const errorEl = document.querySelector("[data-equipment-listing-error]");
+    const title = (document.querySelector("#t-title")?.value || "").trim();
+    const area = (document.querySelector("#t-area")?.value || "").trim();
+    const category = document.querySelector("#t-category")?.value || "hand_tool";
+    const conditionLabel = (document.querySelector("#t-condition")?.value || "").trim();
+    const knownIssues = (document.querySelector("#t-issues")?.value || "").trim();
+    const lastInspectedOn = document.querySelector("#t-inspected")?.value || null;
+    const transportNote = (document.querySelector("#t-transport")?.value || "").trim();
+    const safetyConfirmed = Boolean(document.querySelector("#t-safety")?.checked);
+    const manualAvailable = Boolean(document.querySelector("#t-manual")?.checked);
+    const experienceRequired = Boolean(document.querySelector("#t-experience")?.checked);
+    const maker = (document.querySelector("#t-maker")?.value || "").trim();
+    const model = (document.querySelector("#t-model")?.value || "").trim();
+    const feeType = document.querySelector('input[name="t-fee-type"]:checked')?.value || "free";
+    const feeAmount = feeType === "free" ? 0 : Number(document.querySelector("#t-fee-amount")?.value || 0);
+    const poweredMissing = category === "small_powered" && (!maker || !model || !manualAvailable || !experienceRequired || !transportNote);
+    if (!title || !area || !conditionLabel || !knownIssues || !lastInspectedOn || !safetyConfirmed || (feeType === "paid" && feeAmount <= 0) || poweredMissing) {
+      if (errorEl) {
+        errorEl.textContent = poweredMissing
+          ? "小型管理機・耕運機は、メーカー・型式・説明書・経験者限定・運搬条件をすべて確認してください。"
+          : "農具名、地域、点検日、状態、不具合の有無、料金、安全確認を入力してください。";
+        errorEl.hidden = false;
+      }
+      return;
+    }
+    const ownerValue = document.querySelector("#t-owner")?.value || "personal";
+    const payload = {
+      group_id: ownerValue === "personal" ? null : ownerValue,
+      title,
+      category,
+      area,
+      maker,
+      model,
+      years_used: (document.querySelector("#t-years")?.value || "").trim(),
+      last_inspected_on: lastInspectedOn,
+      condition_label: conditionLabel,
+      known_issues: knownIssues,
+      manual_available: manualAvailable,
+      fee_type: feeType,
+      fee_amount: feeAmount,
+      fee_unit: document.querySelector("#t-fee-unit")?.value || "day",
+      fee_note: (document.querySelector("#t-fee-note")?.value || "").trim(),
+      consumables_policy: document.querySelector("#t-consumables")?.value || "owner",
+      experience_required: experienceRequired,
+      transport_note: transportNote,
+      description: (document.querySelector("#t-description")?.value || "").trim(),
+      lender_terms: (document.querySelector("#t-terms")?.value || "").trim(),
+      risk_level: category === "small_powered" ? "powered" : "low",
+      safety_confirmed: true,
+      photo: category === "small_powered" ? "photo-tool-cultivator" : category === "material" ? "photo-tool-material" : "photo-tool-generic",
+    };
+    equipmentListingSave.disabled = true;
+    window.NOU_API.createEquipmentListing(session.user.id, payload)
+      .then(async () => {
+        await loadMyEquipment();
+        manageNotice = "農具の掲載を申請しました。運営の安全確認後に公開されます。";
+        window.location.hash = "#/manage/tools";
+        renderApp();
+      })
+      .catch((error) => {
+        console.warn("農具掲載の申請に失敗しました。", error);
+        equipmentListingSave.disabled = false;
+        if (errorEl) {
+          errorEl.textContent = "申請に失敗しました。DB更新状況を確認し、少し待ってからもう一度お試しください。";
+          errorEl.hidden = false;
+        }
+      });
+    return;
+  }
+
+  const equipmentRequest = event.target.closest("[data-equipment-request]");
+  if (equipmentRequest) {
+    const item = equipmentById(equipmentRequest.dataset.id);
+    const errorEl = document.querySelector("[data-equipment-request-error]");
+    const startOn = document.querySelector("#tool-start")?.value || "";
+    const endOn = document.querySelector("#tool-end")?.value || "";
+    const purpose = (document.querySelector("#tool-purpose")?.value || "").trim();
+    const experience = document.querySelector("#tool-experience")?.value || "";
+    const transportPlan = (document.querySelector("#tool-transport")?.value || "").trim();
+    const termsAccepted = Boolean(document.querySelector("#tool-terms")?.checked);
+    const lacksRequiredExperience = item?.experienceRequired && (experience === "" || experience === "初めて使う" || experience === "手動農具のみ経験がある");
+    if (!item || !startOn || !endOn || endOn < startOn || !purpose || !experience || !transportPlan || !termsAccepted || lacksRequiredExperience) {
+      if (errorEl) {
+        errorEl.textContent = lacksRequiredExperience
+          ? "この農機は使用経験がある方に限られます。経験条件をご確認ください。"
+          : "利用日、目的、経験、運搬方法、約束の確認を入力してください。";
+        errorEl.hidden = false;
+      }
+      return;
+    }
+    equipmentRequest.disabled = true;
+    window.NOU_API.createEquipmentRequest(session.user.id, item.id, {
+      start_on: startOn,
+      end_on: endOn,
+      purpose,
+      experience,
+      transport_plan: transportPlan,
+      borrower_note: (document.querySelector("#tool-borrower-note")?.value || "").trim(),
+      terms_accepted: true,
+    })
+      .then(async () => {
+        await loadMyEquipment();
+        manageNotice = "利用申請を送りました。貸し手の承認後に受渡連絡が表示されます。";
+        window.location.hash = "#/manage/tools";
+        renderApp();
+      })
+      .catch((error) => {
+        console.warn("農具の利用申請に失敗しました。", error);
+        equipmentRequest.disabled = false;
+        if (errorEl) {
+          errorEl.textContent = "申請に失敗しました。少し待ってからもう一度お試しください。";
+          errorEl.hidden = false;
+        }
+      });
+    return;
+  }
+
+  const equipmentAvailability = event.target.closest("[data-equipment-availability]");
+  if (equipmentAvailability) {
+    equipmentAvailability.disabled = true;
+    window.NOU_API.updateEquipmentAvailability(equipmentAvailability.dataset.id, equipmentAvailability.dataset.status)
+      .then(async () => {
+        await loadMyEquipment();
+        await hydrateEquipmentFromApi();
+        manageNotice = "受付状態を更新しました。";
+        renderApp({ preserveScroll: true });
+      })
+      .catch((error) => {
+        console.warn("受付状態の更新に失敗しました。", error);
+        equipmentAvailability.disabled = false;
+      });
+    return;
+  }
+
+  const equipmentRequestAction = event.target.closest("[data-equipment-request-action]");
+  if (equipmentRequestAction) {
+    const action = equipmentRequestAction.dataset.equipmentRequestAction;
+    const id = equipmentRequestAction.dataset.id;
+    const contact = (document.querySelector(`#request-contact-${id}`)?.value || "").trim();
+    const handoverCondition = (document.querySelector(`#handover-condition-${id}`)?.value || "").trim();
+    const returnCondition = (document.querySelector(`#return-condition-${id}`)?.value || "").trim();
+    const incidentNote = (document.querySelector(`#incident-note-${id}`)?.value || "").trim();
+    if ((action === "approve" && !contact) || (action === "handover" && !handoverCondition) || (action === "return" && !returnCondition) || (action === "incident" && !incidentNote)) {
+      const input = action === "approve" ? document.querySelector(`#request-contact-${id}`) : action === "handover" ? document.querySelector(`#handover-condition-${id}`) : document.querySelector(`#return-condition-${id}`);
+      (action === "incident" ? document.querySelector(`#incident-note-${id}`) : input)?.focus();
+      return;
+    }
+    const payload =
+      action === "approve"
+        ? { status: "approved", lender_contact: contact }
+        : action === "decline"
+          ? { status: "declined" }
+          : action === "handover"
+            ? { status: "handed_over", handover_condition: handoverCondition }
+            : action === "return"
+              ? { status: "returned", return_condition: returnCondition }
+              : action === "cancel"
+                ? { status: "cancelled" }
+                : null;
+    if (!payload && action !== "incident") return;
+    equipmentRequestAction.disabled = true;
+    const task = action === "incident" ? window.NOU_API.reportEquipmentIncident(id, incidentNote) : window.NOU_API.updateEquipmentRequest(id, payload);
+    task
+      .then(async () => {
+        await loadMyEquipment();
+        manageNotice = "貸し借りの状態を更新しました。";
+        renderApp({ preserveScroll: true });
+      })
+      .catch((error) => {
+        console.warn("貸し借り状態の更新に失敗しました。", error);
+        equipmentRequestAction.disabled = false;
+      });
+    return;
+  }
+
   const adminButton = event.target.closest("[data-admin]");
   if (adminButton) {
     const action = adminButton.dataset.admin;
@@ -2493,6 +3152,10 @@ app.addEventListener("click", (event) => {
             ? window.NOU_API.setEventStatus(id, "published")
             : action === "cancel-event"
               ? window.NOU_API.setEventStatus(id, "cancelled")
+              : action === "approve-equipment"
+                ? window.NOU_API.setEquipmentModeration(id, "approved")
+                : action === "reject-equipment"
+                  ? window.NOU_API.setEquipmentModeration(id, "rejected")
               : action === "approve-contrib" && contribution
                 ? window.NOU_API.resolveSeedContribution(contribution, true)
                 : action === "reject-contrib" && contribution
@@ -2503,6 +3166,7 @@ app.addEventListener("click", (event) => {
         await loadAdminQueue();
         await hydrateFromApi();
         await loadMyGroups();
+        await loadMyEquipment();
         if (action !== "reload") manageNotice = "反映しました。";
         renderApp({ preserveScroll: true });
       })
@@ -2702,6 +3366,16 @@ app.addEventListener("click", (event) => {
   }
 });
 
+app.addEventListener("change", (event) => {
+  if (event.target.matches('input[name="t-fee-type"]')) {
+    const paid = event.target.value === "paid";
+    const fields = document.querySelector("#t-paid-fields");
+    if (fields) fields.hidden = !paid;
+    const amount = document.querySelector("#t-fee-amount");
+    if (amount) amount.required = paid;
+  }
+});
+
 // ---- Supabase からの読み込み（P2-1）----
 // DBの行を、これまでの画面が期待する形に変換する。失敗時は mock-data のまま動く。
 const DB_WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
@@ -2718,6 +3392,7 @@ const isoToWeekday = (iso) => {
 const dbGroupToUi = (row) => ({
   id: row.id,
   displayName: row.display_name,
+  entityType: row.entity_type || "group",
   area: row.area,
   status: row.stage,
   methods: row.methods || [],
@@ -2732,6 +3407,38 @@ const dbGroupToUi = (row) => ({
     .slice()
     .sort((a, b) => (a.published_on < b.published_on ? 1 : -1))
     .map((item) => ({ date: isoToShortDate(item.published_on), title: item.title, text: item.body })),
+});
+
+const dbEquipmentToUi = (row) => ({
+  id: row.id,
+  ownerId: row.owner_id,
+  groupId: row.group_id,
+  title: row.title,
+  category: row.category,
+  area: row.area,
+  ownerName: row.group?.display_name || row.owner?.nickname || "登録ユーザー",
+  ownerType: row.group?.entity_type || (row.group_id ? "group" : "personal"),
+  maker: row.maker,
+  model: row.model,
+  yearsUsed: row.years_used,
+  lastInspectedOn: row.last_inspected_on ? row.last_inspected_on.replaceAll("-", "/") : "",
+  conditionLabel: row.condition_label,
+  knownIssues: row.known_issues,
+  manualAvailable: row.manual_available,
+  feeType: row.fee_type,
+  feeAmount: row.fee_amount,
+  feeUnit: row.fee_unit,
+  feeNote: row.fee_note,
+  consumablesPolicy: row.consumables_policy,
+  experienceRequired: row.experience_required,
+  transportNote: row.transport_note,
+  description: row.description,
+  lenderTerms: row.lender_terms,
+  riskLevel: row.risk_level,
+  availabilityStatus: row.availability_status,
+  moderationStatus: row.moderation_status,
+  photo: row.photo,
+  persisted: true,
 });
 
 const dbEventToUi = (row, counts, groupNames) => ({
@@ -2837,6 +3544,18 @@ const syncMyStateWithDb = async () => {
   }
 };
 
+const hydrateEquipmentFromApi = async () => {
+  if (!window.NOU_API?.enabled) return false;
+  try {
+    const rows = await window.NOU_API.fetchEquipment();
+    equipment = rows.map(dbEquipmentToUi);
+    return true;
+  } catch (error) {
+    console.warn("農具シェア用DBが未適用のため、掲載例を表示します。", error);
+    return false;
+  }
+};
+
 const hydrateFromApi = async () => {
   if (!window.NOU_API || !window.NOU_API.enabled) return false;
   try {
@@ -2858,6 +3577,7 @@ const hydrateFromApi = async () => {
     friends = groupRows.map(dbGroupToUi);
     events = eventRows.map((row) => dbEventToUi(row, counts.get(row.id), groupNames));
     seeds = seedRows.map((row) => dbSeedToUi(row, eventLinks));
+    await hydrateEquipmentFromApi();
     rebuildFilterOptions();
     document.documentElement.dataset.source = "supabase";
     return true;
@@ -2887,7 +3607,7 @@ window.addEventListener("DOMContentLoaded", async () => {
       if (session && !wasLoggedIn) {
         authEmailSent = false;
         await syncMyStateWithDb();
-        await Promise.all([loadMyNotes(), loadMyProfile(), loadMyGroups()]);
+        await Promise.all([loadMyNotes(), loadMyProfile(), loadMyGroups(), loadMyEquipment()]);
         // ログインメールから戻った直後はマイページへ案内する。
         if (!window.location.hash.startsWith("#/")) {
           window.location.replace("#/mypage");
@@ -2898,12 +3618,15 @@ window.addEventListener("DOMContentLoaded", async () => {
         myNotes = null;
         myProfile = null;
         myGroups = null;
+        myEquipmentListings = null;
+        myBorrowRequests = null;
+        equipmentRequestsForOwner = null;
       }
       renderApp();
     });
     if (session) {
       await syncMyStateWithDb();
-      await Promise.all([loadMyNotes(), loadMyProfile(), loadMyGroups()]);
+      await Promise.all([loadMyNotes(), loadMyProfile(), loadMyGroups(), loadMyEquipment()]);
     }
   }
 
