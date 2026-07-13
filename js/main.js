@@ -2751,9 +2751,9 @@ const mountSeedMap = () => {
     const research = seed.sourceType === "research_needed";
     L.circleMarker([seed.lat, seed.lng], {
       radius: 9,
-      color: "#ffffff",
+      color: "#faf9f5",
       weight: 2,
-      fillColor: research ? "#f59a23" : "#2e7d32",
+      fillColor: research ? "#c15f3c" : "#556247",
       fillOpacity: 0.95,
     })
       .addTo(seedMap)
