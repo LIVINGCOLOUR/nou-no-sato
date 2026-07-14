@@ -423,7 +423,7 @@ const sectionHeading = (icon, eyebrow, title, copy = "") => `
 `;
 
 const routeCards = (ids) => {
-  const list = ids ? routes.filter((route) => ids.includes(route.id)) : routes;
+  const list = ids ? ids.map((id) => routes.find((route) => route.id === id)).filter(Boolean) : routes;
   return `
     <div class="route-grid">
       ${list
